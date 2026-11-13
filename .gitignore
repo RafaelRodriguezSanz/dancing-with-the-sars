@@ -1,0 +1,12 @@
+.lightcraft-library/
+CLAUDE.local.md
+.claude/settings.local.json
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+data/raw/
+*.tif
+*.SAFE/
+node_modules/
