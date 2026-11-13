@@ -1,7 +1,35 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dancing with the SARs</title></head>
-<body style="font-family:system-ui;margin:2rem;max-width:40rem">
-<h1>Dancing with the SARs</h1>
-<p>SAR flood monitor (Sentinel-1). Work in progress for NASA Space Apps Challenge 2026.</p>
-</body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dancing with the SARs</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header>
+  <h1>Dancing with the SARs</h1>
+  <p class="sub">NISAR radar imagery over the Santa Lucía lower basin, Uruguay. NASA Space Apps Challenge 2026.</p>
+</header>
+<section class="controls" aria-label="Scene controls">
+  <div class="row">
+    <button id="prev" type="button" aria-label="Previous date">&larr;</button>
+    <select id="date-select" aria-label="Acquisition date"></select>
+    <button id="next" type="button" aria-label="Next date">&rarr;</button>
+  </div>
+  <div id="scene-info" class="info">No scene selected</div>
+  <div class="row">
+    <label for="opacity">Opacity</label>
+    <input id="opacity" type="range" min="0" max="100" value="80">
+    <button id="reset" type="button">Reset view</button>
+  </div>
+  <div id="status" class="status" role="status">Starting...</div>
+</section>
+<div id="map" aria-label="Map"></div>
+<p class="caveat">False-colour visualisation tiles, not calibrated backscatter. Dates without GIBS tiles are skipped by the arrows.</p>
+<footer>Built with AI assistance (Claude Code). Data: NASA CMR, NASA GIBS (NISAR GCOV, NASA-ISRO). Basemap &copy; OpenStreetMap contributors.</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
