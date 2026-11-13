@@ -63,3 +63,9 @@ test('toEntries flags partial passes over the AOI', async () => {
   assert.equal(e2.usable, false);
   assert.ok(Math.abs(e2.aoiCoverage - 0.52) < 0.05);
 });
+
+test('toEntries drops passes that do not touch the area', async () => {
+  const { toEntries } = await import('./listScenes.js');
+  const far = [[10, 10], [11, 10], [11, 11], [10, 11]];
+  assert.equal(toEntries([{ date: '2026-10-01', start: '2026-10-01T00:00:00Z', footprints: [far] }], { bbox: [0, 0, 1, 1] }).length, 0);
+});

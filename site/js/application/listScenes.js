@@ -29,5 +29,5 @@ export function toEntries(scenes, aoi) {
     const covered = isCovered(e.date);
     const share = aoi && footprints.length ? aoiCoverage(footprints, aoi.bbox) : null;
     return { ...e, covered, aoiCoverage: share, usable: covered && (share === null || share >= FULL_COVERAGE) };
-  });
+  }).filter((e) => e.aoiCoverage !== 0); // passes that never touch the area (e.g. fallback for another place)
 }

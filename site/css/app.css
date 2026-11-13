@@ -22,3 +22,5 @@ footer { font-size: .7rem; color: #999; }
 
 .layers { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .layer { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+#draw-area.active { background: #ffd400; color: #000; }
+#map.drawing { cursor: crosshair; touch-action: none; }

@@ -3,26 +3,34 @@ import { tierForZoom } from '../domain/layer.js';
 
 export class MapView {
   constructor(elementId, aoi) {
-    const [w, s, e, n] = aoi.bbox;
-    this.bounds = [[s, w], [n, e]];
-    this.map = L.map(elementId, { zoomControl: true }).fitBounds(this.bounds);
+    this.map = L.map(elementId, { zoomControl: true });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
-    L.rectangle(this.bounds, { color: '#ff6600', weight: 2, fill: false, interactive: false }).addTo(this.map);
+    this.aoiRect = L.rectangle([[0, 0], [1, 1]], { color: '#ff6600', weight: 2, fill: false, interactive: false }).addTo(this.map);
     this.opacity = 0.8;
     this.loadingEl = document.getElementById('loading');
     this.slots = new Map(); // layer id -> { layer, date, key, visible, pending }
     this.busy = new Map(); // layer id -> progress text
     // Quality upgrade: when zoom crosses a tier threshold, swap that layer's source.
     this.map.on('zoomend', () => { for (const s of this.slots.values()) this.show(s.layer, s.date); });
+    this.setArea(aoi);
+  }
+
+  /** New area of interest: outline it, zoom to it, and reload active layers clipped to it. */
+  setArea(aoi) {
+    const [w, s, e, n] = aoi.bbox;
+    this.bounds = [[s, w], [n, e]];
+    this.aoiRect.setBounds(this.bounds);
+    this.map.fitBounds(this.bounds);
+    for (const slot of this.slots.values()) { slot.key = null; this.show(slot.layer, slot.date); }
   }
 
   /** Show (or refresh) a layer. Fetches only the visible viewport tiles of the tier for the current zoom. */
   show(layer, date) {
     const tier = tierForZoom(layer, this.map.getZoom());
-    const key = `${tier.id}|${date ?? ''}`;
+    const key = `${tier.id}|${date ?? ''}|${this.bounds}`;
     const slot = this.slots.get(layer.id) ?? { layer, visible: null, pending: null, key: null };
     slot.layer = layer; slot.date = date;
     this.slots.set(layer.id, slot);
@@ -31,6 +39,7 @@ export class MapView {
     if (slot.pending) { this.map.removeLayer(slot.pending); slot.pending = null; }
     const tl = L.tileLayer(tier.url(date), {
       maxNativeZoom: tier.maxNativeZoom, maxZoom: 16, opacity: this.opacity, attribution: tier.attribution,
+      bounds: this.bounds, // only tiles that touch the selected area are requested
     });
     let pending = 0; let done = 0;
     const update = () => this.setBusy(layer.id, pending > 0 ? `${layer.title} [${tier.label}] ${done}/${done + pending}` : null);

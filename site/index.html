@@ -10,7 +10,7 @@
 <body>
 <header>
   <h1>Dancing with the SARs</h1>
-  <p class="sub">NISAR radar imagery over the Santa Lucía lower basin, Uruguay. NASA Space Apps Challenge 2026.</p>
+  <p class="sub">NISAR radar imagery for an area you choose (default: Santa Lucía basin, Uruguay). Only that area is loaded. NASA Space Apps Challenge 2026.</p>
 </header>
 <section class="controls" aria-label="Scene controls">
   <div class="row">
@@ -23,7 +23,12 @@
   <div class="row">
     <label for="opacity">Opacity</label>
     <input id="opacity" type="range" min="0" max="100" value="80">
-    <button id="reset" type="button">Reset view</button>
+    <button id="reset" type="button">Go to area</button>
+  </div>
+  <div class="row">
+    <button id="draw-area" type="button">Draw area</button>
+    <button id="use-view" type="button">Use this view</button>
+    <span id="area-info" class="info"></span>
   </div>
   <div id="status" class="status" role="status">Starting...</div>
 </section>
