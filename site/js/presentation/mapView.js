@@ -1,5 +1,43 @@
 /* Only place (with controls) that touches the Leaflet global `L`. */
 import { gibsTileUrl, GIBS_MAX_NATIVE_ZOOM } from '../infrastructure/gibs.js';
+import { classifyTile } from '../domain/tileQuality.js';
+
+const MAX_TRIES = 3;
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('tile failed'));
+    img.src = url;
+  });
+}
+
+/** Tile layer that draws only real imagery: GIBS noise tiles (no-data areas) are left transparent. */
+function createFilteredLayer(template, options) {
+  const Filtered = L.GridLayer.extend({
+    createTile(coords, done) {
+      const tile = document.createElement('canvas');
+      tile.width = 256;
+      tile.height = 256;
+      const url = L.Util.template(template, { z: coords.z, x: coords.x, y: coords.y });
+      (async () => {
+        let img = null;
+        for (let i = 0; i < MAX_TRIES && !img; i += 1) {
+          try { img = await loadImage(url); } catch { /* retry: GIBS sometimes answers HTTP 500 */ }
+        }
+        if (!img) return done(new Error('tile failed'), tile);
+        const ctx = tile.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, 256, 256);
+        if (classifyTile(ctx.getImageData(0, 0, 256, 256).data) === 'corrupt') ctx.clearRect(0, 0, 256, 256);
+        return done(null, tile);
+      })();
+      return tile;
+    },
+  });
+  return new Filtered(options);
+}
 
 export class MapView {
   constructor(elementId, aoi) {
@@ -26,7 +64,7 @@ export class MapView {
       this.setLoading(false);
       return;
     }
-    const layer = L.tileLayer(gibsTileUrl(date), {
+    const layer = createFilteredLayer(gibsTileUrl(date), {
       maxNativeZoom: GIBS_MAX_NATIVE_ZOOM,
       maxZoom: 16,
       opacity: this.opacity,
