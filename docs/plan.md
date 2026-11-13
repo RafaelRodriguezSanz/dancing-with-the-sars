@@ -22,6 +22,33 @@ Pending Rafa's approval (section 6, items 1 and 6).
    open the Space Apps team/project page; final merge to master by Sun 18:00 + private-window test.
 6. CI script name: `scripts/ci.sh`. Agents merge via `gh`; Rafa never reviews code.
 
+## 0b. v3 pivot (2026-11-13, Rafa): layers of surface change, progressive loading (supersedes §1 scope where they differ)
+
+Rafa's direction: identify **how Earth's surface changes** (wetland loss, wildfires, earthquakes, agriculture,
+glacier motion, ...). The map shows each change type as a **toggleable layer**. Research basis: `docs/cambios.md`.
+
+1. **Layer framework** (`site/js/layers/`): each change type is one layer module with a common contract
+   (id, title, sources, tiers, legend, caveat). A registry lists them; the UI toggles them on/off. Domain/application
+   stay free of Leaflet/DOM. Adding a layer = one folder + one line in the registry.
+2. **Dynamic, browser-side, on demand.** Only the *active* layer, the *visible* viewport and the *selected* date are
+   fetched. Nothing is bulk-downloaded (the 43 GB case is never fetched whole).
+3. **Quality tiers, like YouTube resolutions.** A layer lists sources from cheapest to best; the viewer starts at
+   tier 0 and upgrades as the user zooms or asks for it:
+   - T0 public, instant, coarse: NASA GIBS tiles or public browse PNGs (no login, CORS where available).
+   - T1 pre-processed overview pyramid committed to the repo (made offline with Rafa's `.netrc`, small PNG tiles).
+   - T2 raw COG/HDF5 range reads from the DAAC: needs Earthdata login; plain redirects to urs.earthdata.nasa.gov and
+     podaac has no CORS, so **not available to a static page**; stays an offline path unless proven otherwise.
+4. **Measured access facts (2026-11-13):** CMR is public + CORS (browser-side date lists OK). OPERA DSWx-S1 granules
+   are 4-8 MB, DIST-ALERT-S1 25-68 MB, but their GeoTIFFs 302 to Earthdata login. Public `_BROWSE.png` of DSWx-S1
+   works without login (303 to CloudFront, ~20 KB) but is a whole-granule thumbnail. GIBS OPERA water tiles are mostly
+   empty and sometimes return random bytes (same non-determinism as NISAR GCOV tiles): T0 only, flagged.
+5. **Layers (one agent each):** water/wetlands, wildfire/burn, agriculture, surface deformation (earthquakes),
+   glaciers/ice, general disturbance (OPERA DIST). Uruguay has no glaciers/large quakes: those layers are
+   demonstrated at a place where the signal exists (own AOI per layer), never claimed for Uruguay.
+6. **ML only where needed:** thresholds/ratios for water and burn; ML only for crop classification, as a later
+   stretch. No prediction of earthquakes/tsunamis.
+7. Corrupt-tile handling is deferred (Rafa).
+
 ## 1. Goal and scope
 
 Build an open-source web app (GitHub Pages, static) that uses **NISAR L2 GCOV (L-band, HH+HV)** to track how
