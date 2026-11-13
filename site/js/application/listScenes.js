@@ -1,5 +1,5 @@
 import { groupByDate } from '../domain/scene.js';
-import { isCovered } from '../domain/coverage.js';
+import { isCovered, rendersCleanly } from '../domain/coverage.js';
 import { aoiCoverage, FULL_COVERAGE } from '../domain/footprint.js';
 
 /**
@@ -26,7 +26,7 @@ export async function listScenesForArea(liveRepo, fallbackRepo, aoi) {
  */
 export function toEntries(scenes, aoi) {
   return groupByDate(scenes).map(({ footprints, ...e }) => {
-    const covered = isCovered(e.date);
+    const covered = isCovered(e.date) && rendersCleanly(e.date, e.tracks);
     const share = aoi && footprints.length ? aoiCoverage(footprints, aoi.bbox) : null;
     return { ...e, covered, aoiCoverage: share, usable: covered && (share === null || share >= FULL_COVERAGE) };
   });
