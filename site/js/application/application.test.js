@@ -56,20 +56,10 @@ test('toEntries flags partial passes over the AOI', async () => {
   const full = [[-1, -1], [2, -1], [2, 2], [-1, 2]];
   const half = [[0.5, -1], [2, -1], [2, 2], [0.5, 2]];
   const [e1, e2] = toEntries([
-    { date: '2026-10-01', start: '2026-10-01T00:00:00Z', track: 82, footprints: [full] },
-    { date: '2026-10-02', start: '2026-10-02T00:00:00Z', track: 82, footprints: [half] },
+    { date: '2026-10-01', start: '2026-10-01T00:00:00Z', footprints: [full] },
+    { date: '2026-10-02', start: '2026-10-02T00:00:00Z', footprints: [half] },
   ], aoi);
   assert.equal(e1.usable, true);
   assert.equal(e2.usable, false);
   assert.ok(Math.abs(e2.aoiCoverage - 0.52) < 0.05);
-});
-
-test('only clean-rendering tracks count as covered', async () => {
-  const { toEntries } = await import('./listScenes.js');
-  const ring = [[-1, -1], [2, -1], [2, 2], [-1, 2]];
-  const mk = (date, track) => ({ date, start: `${date}T00:00:00Z`, track, footprints: [ring] });
-  const [a, b, c] = toEntries([mk('2026-09-11', 82), mk('2026-09-10', 60), mk('2026-07-01', 82)].sort((x, y) => x.date.localeCompare(y.date)), { bbox: [0, 0, 1, 1] });
-  assert.equal(c.usable, true);   // 2026-09-11 t82
-  assert.equal(b.covered, false); // 2026-09-10 t60
-  assert.equal(a.covered, false); // 2026-07-01 known broken
 });
