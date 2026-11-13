@@ -30,7 +30,7 @@ export class Controls {
     this.el.select.replaceChildren(...entries.map((e) => {
       const o = this.doc.createElement('option');
       o.value = e.date;
-      o.textContent = optionLabel(e);
+      o.textContent = optionLabel(e) + (this.badge?.(e.date) ?? '');
       return o;
     }));
     this.select(defaultDate);
@@ -48,7 +48,7 @@ export class Controls {
       : 'No scene selected';
     this.el.prev.disabled = !date || stepDate(this.entries, date, -1) === null;
     this.el.next.disabled = !date || stepDate(this.entries, date, 1) === null;
-    this.onDate(e && e.covered ? date : null);
+    this.onDate(date ?? null, Boolean(e && e.covered)); // calibrated layers do not need GIBS coverage
   }
 
   step(direction) {

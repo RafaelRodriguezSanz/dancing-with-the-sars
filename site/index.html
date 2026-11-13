@@ -4,41 +4,68 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dancing with the SARs</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.12.0/maplibre-gl.min.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-<header>
-  <h1>Dancing with the SARs</h1>
-  <p class="sub">NISAR radar imagery for an area you choose (default: Santa Lucía basin, Uruguay). Only that area is loaded. NASA Space Apps Challenge 2026.</p>
-</header>
-<section class="controls" aria-label="Scene controls">
-  <div class="row">
-    <button id="prev" type="button" aria-label="Previous date">&larr;</button>
-    <select id="date-select" aria-label="Acquisition date"></select>
-    <button id="next" type="button" aria-label="Next date">&rarr;</button>
-  </div>
-  <div id="layers" class="layers" aria-label="Layers"></div>
-  <div id="scene-info" class="info">No scene selected</div>
-  <div class="row">
-    <label for="opacity">Opacity</label>
-    <input id="opacity" type="range" min="0" max="100" value="80">
-    <button id="reset" type="button">Go to area</button>
-  </div>
-  <div class="row">
-    <button id="draw-area" type="button">Draw area</button>
-    <button id="use-view" type="button">Use this view</button>
-    <span id="area-info" class="info"></span>
-  </div>
-  <div id="status" class="status" role="status">Starting...</div>
-</section>
-<div class="map-wrap">
-  <div id="map" aria-label="Map"></div>
-  <div id="loading" class="loading" role="status" hidden><i class="spinner" aria-hidden="true"></i><span>Loading...</span></div>
-</div>
-<p class="caveat">False-colour visualisation tiles, not calibrated backscatter. The arrows skip dates without tiles or whose pass covers less than 95% of the orange box (still listed in the menu).</p>
-<footer>Built with AI assistance (Claude Code). Data: NASA CMR, NASA GIBS (NISAR GCOV, NASA-ISRO). Basemap &copy; OpenStreetMap contributors.</footer>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<main class="app">
+  <div id="map" aria-label="Globe map"></div>
+
+  <header class="glass topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>Dancing with the SARs</h1>
+        <p class="sub">NISAR L-band radar &middot; land change you can watch</p>
+      </div>
+    </div>
+    <div class="row date-row">
+      <button id="prev" class="icon" type="button" aria-label="Previous date">&#8249;</button>
+      <select id="date-select" aria-label="Acquisition date"></select>
+      <button id="next" class="icon" type="button" aria-label="Next date">&#8250;</button>
+    </div>
+    <button id="evolution" class="primary" type="button" title="Play every processed date and chart what changes inside the current view">&#9654;&ensp;Evolution of this view</button>
+    <div id="scene-info" class="info">No scene selected</div>
+    <div id="status" class="status" role="status">Starting...</div>
+    <details class="tools">
+      <summary>Area &amp; display</summary>
+      <div class="row">
+        <label for="opacity">Opacity</label>
+        <input id="opacity" type="range" min="0" max="100" value="80">
+      </div>
+      <label class="row check" title="NISAR looks at this area from three orbit passes with different angles; this removes the colour jump between them">
+        <input id="steady" type="checkbox" checked> Steady colours (remove viewing-angle flicker)
+      </label>
+      <div class="row">
+        <button id="draw-area" type="button">Draw area</button>
+        <button id="use-view" type="button">Use this view</button>
+        <button id="reset" type="button">Go to area</button>
+      </div>
+      <div id="area-info" class="info"></div>
+    </details>
+    <details class="tools">
+      <summary>About the data</summary>
+      <p class="caveat">Calibrated layer: real NISAR GCOV backscatter cut from NASA Earthdata for the Santa Lucía box (red = HH, green = HV, blue = HH&minus;HV, fixed dB scale). GIBS layer: false-colour tiles for any area, not calibrated. Alerts are candidates from simple rules, not confirmed events. The arrows skip dates without tiles or whose pass covers less than 95% of the box (still listed in the menu).</p>
+      <p class="credits">Built with AI assistance (Claude Code). Data: NISAR GCOV (NASA-ISRO) via NASA Earthdata / ASF DAAC, NASA CMR, NASA GIBS (incl. Blue Marble). Basemap &copy; OpenStreetMap contributors.</p>
+    </details>
+  </header>
+
+  <aside id="side-panel" class="glass side-panel" aria-label="Layers">
+    <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="panel-body">Layers</button>
+    <div id="panel-body" class="panel-body"></div>
+  </aside>
+
+  <section id="evolution-panel" class="glass evo-panel" aria-label="Evolution of the view" hidden>
+    <div class="evo-head"><button class="evo-play" type="button">Play</button><strong class="evo-date"></strong><button class="evo-close icon" type="button" aria-label="Close">&times;</button></div>
+    <div class="evo-body"></div>
+  </section>
+
+  <div id="loading" class="glass loading" role="status" hidden><i class="spinner" aria-hidden="true"></i><span>Loading...</span></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.12.0/maplibre-gl.min.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

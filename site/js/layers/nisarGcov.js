@@ -8,6 +8,7 @@ export default defineLayer({
   description: 'L-band radar over the area; the base image the change layers are read against.',
   caveat: 'False-colour GIBS visualisation, not calibrated values. Some dates render as noise.',
   usesDate: true,
+  needsGibsCoverage: true,
   region: { name: 'Santa Lucía, Uruguay', bbox: SANTA_LUCIA.bbox },
   legend: [],
   tiers: [{
