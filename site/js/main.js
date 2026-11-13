@@ -23,10 +23,10 @@ try {
     SANTA_LUCIA,
   );
   controls.setEntries(entries, pickDefaultDate(entries));
-  const covered = entries.filter((e) => e.covered).length;
+  const usable = entries.filter((e) => e.usable).length;
   controls.setStatus(source === 'live'
-    ? `Scene list: live from NASA CMR (${entries.length} dates, ${covered} with GIBS tiles).`
-    : `Scene list: bundled fallback snapshot, CMR unavailable (${entries.length} dates, ${covered} with GIBS tiles).`);
+    ? `Scene list: live from NASA CMR (${entries.length} dates, ${usable} full passes with tiles).`
+    : `Scene list: bundled fallback snapshot, CMR unavailable (${entries.length} dates, ${usable} full passes with tiles).`);
 } catch (e) {
   controls.setStatus(`Could not load scene list: ${e.message}`);
 }

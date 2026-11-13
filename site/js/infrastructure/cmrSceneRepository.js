@@ -1,4 +1,5 @@
 import { createScene, parseGranuleTitle } from '../domain/scene.js';
+import { parseCmrPolygon } from '../domain/footprint.js';
 
 export const CMR_COLLECTIONS = ['NISAR_L2_GCOV_PROVISIONAL_V1', 'NISAR_L2_GCOV_V1'];
 const CMR_BASE = 'https://cmr.earthdata.nasa.gov/search/granules.json';
@@ -23,6 +24,7 @@ export function parseCmrResponse(json, collection) {
       collection,
       start: e.time_start,
       ...parseGranuleTitle(e.title),
+      footprints: (e.polygons ?? []).map((p) => parseCmrPolygon(p[0])).filter((r) => r.length >= 3),
     }));
 }
 

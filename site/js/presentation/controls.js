@@ -30,7 +30,7 @@ export class Controls {
     this.el.select.replaceChildren(...entries.map((e) => {
       const o = this.doc.createElement('option');
       o.value = e.date;
-      o.textContent = e.covered ? e.date : `${e.date} (no GIBS tiles)`;
+      o.textContent = optionLabel(e);
       return o;
     }));
     this.select(defaultDate);
@@ -42,8 +42,9 @@ export class Controls {
     const e = this.entries.find((x) => x.date === date);
     const tracks = e && e.tracks.length ? e.tracks.join(', ') : '?';
     const dirs = e && e.directions.length ? e.directions.join(', ') : 'unknown direction';
+    const share = e && e.aoiCoverage != null ? ` / ${Math.round(e.aoiCoverage * 100)}% of area imaged` : '';
     this.el.info.textContent = e
-      ? `Track ${tracks} / ${dirs}${e.covered ? '' : ' / outside GIBS coverage, no tiles'}`
+      ? `Track ${tracks} / ${dirs}${share}${e.covered ? '' : ' / outside GIBS coverage, no tiles'}`
       : 'No scene selected';
     this.el.prev.disabled = !date || stepDate(this.entries, date, -1) === null;
     this.el.next.disabled = !date || stepDate(this.entries, date, 1) === null;
@@ -54,4 +55,10 @@ export class Controls {
     const d = stepDate(this.entries, this.current, direction);
     if (d) this.select(d);
   }
+}
+
+function optionLabel(e) {
+  if (!e.covered) return `${e.date} (no GIBS tiles)`;
+  if (!e.usable) return `${e.date} (partial, ${Math.round(e.aoiCoverage * 100)}%)`;
+  return e.date;
 }

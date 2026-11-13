@@ -27,7 +27,7 @@ test('cmrUrl includes collection and bbox', () => {
 test('parseCmrResponse maps entries to scenes', () => {
   const [s] = parseCmrResponse(json([{ title: T1, time_start: '2026-06-19T21:52:12.000Z' }, { title: 'no-time' }]), 'C');
   assert.deepEqual(s, {
-    id: T1, collection: 'C', date: '2026-06-19', start: '2026-06-19T21:52:12.000Z', track: 82, direction: 'descending',
+    id: T1, collection: 'C', date: '2026-06-19', start: '2026-06-19T21:52:12.000Z', track: 82, direction: 'descending', footprints: [],
   });
   assert.deepEqual(parseCmrResponse({}, 'C'), []);
 });

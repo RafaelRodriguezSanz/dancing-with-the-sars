@@ -12,17 +12,18 @@ export function parseGranuleTitle(title) {
   };
 }
 
-export function createScene({ id, collection, start, track, direction }) {
-  return { id, collection, date: String(start).slice(0, 10), start, track, direction };
+export function createScene({ id, collection, start, track, direction, footprints = [] }) {
+  return { id, collection, date: String(start).slice(0, 10), start, track, direction, footprints };
 }
 
 /** Groups scenes by date: one entry per date, sorted ascending. */
 export function groupByDate(scenes) {
   const byDate = new Map();
   for (const s of scenes) {
-    if (!byDate.has(s.date)) byDate.set(s.date, { date: s.date, tracks: [], directions: [], sceneCount: 0 });
+    if (!byDate.has(s.date)) byDate.set(s.date, { date: s.date, tracks: [], directions: [], sceneCount: 0, footprints: [] });
     const e = byDate.get(s.date);
     e.sceneCount += 1;
+    e.footprints.push(...(s.footprints ?? []));
     if (s.track != null && !e.tracks.includes(s.track)) e.tracks.push(s.track);
     if (s.direction && !e.directions.includes(s.direction)) e.directions.push(s.direction);
   }

@@ -26,8 +26,8 @@ test('falls back on failure or empty result', async () => {
 });
 
 const entries = [
-  { date: 'a', covered: true }, { date: 'b', covered: false },
-  { date: 'c', covered: true }, { date: 'd', covered: false },
+  { date: 'a', covered: true, usable: true }, { date: 'b', covered: false, usable: false },
+  { date: 'c', covered: true, usable: true }, { date: 'd', covered: false, usable: false },
 ];
 
 test('pickDefaultDate prefers latest covered date', () => {
@@ -42,4 +42,24 @@ test('stepDate skips uncovered dates unless asked', () => {
   assert.equal(stepDate(entries, 'c', -1), 'a');
   assert.equal(stepDate(entries, 'c', 1), null);
   assert.equal(stepDate(entries, 'zzz', 1), null);
+});
+
+test('pickDefaultDate prefers a full pass over a later partial one', () => {
+  const list = [{ date: 'a', covered: true, usable: true }, { date: 'b', covered: true, usable: false }];
+  assert.equal(pickDefaultDate(list), 'a');
+  assert.equal(pickDefaultDate([{ date: 'b', covered: true, usable: false }]), 'b');
+});
+
+test('toEntries flags partial passes over the AOI', async () => {
+  const { toEntries } = await import('./listScenes.js');
+  const aoi = { bbox: [0, 0, 1, 1] };
+  const full = [[-1, -1], [2, -1], [2, 2], [-1, 2]];
+  const half = [[0.5, -1], [2, -1], [2, 2], [0.5, 2]];
+  const [e1, e2] = toEntries([
+    { date: '2026-10-01', start: '2026-10-01T00:00:00Z', footprints: [full] },
+    { date: '2026-10-02', start: '2026-10-02T00:00:00Z', footprints: [half] },
+  ], aoi);
+  assert.equal(e1.usable, true);
+  assert.equal(e2.usable, false);
+  assert.ok(Math.abs(e2.aoiCoverage - 0.52) < 0.05);
 });
