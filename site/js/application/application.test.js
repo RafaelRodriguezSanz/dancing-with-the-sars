@@ -64,16 +64,12 @@ test('toEntries flags partial passes over the AOI', async () => {
   assert.ok(Math.abs(e2.aoiCoverage - 0.52) < 0.05);
 });
 
-test('probe quality marks dates with corrupt GIBS tiles as not usable', async () => {
+test('only clean-rendering tracks count as covered', async () => {
   const { toEntries } = await import('./listScenes.js');
   const ring = [[-1, -1], [2, -1], [2, 2], [-1, 2]];
-  const mk = (date) => ({ date, start: `${date}T00:00:00Z`, track: 82, footprints: [ring] });
-  const quality = {
-    '2026-09-10': { valid: 9, corrupt: 0, empty: 0, missing: 0 },
-    '2026-09-11': { valid: 7, corrupt: 2, empty: 0, missing: 0 },
-  };
-  const [a, b, c] = toEntries([mk('2026-09-10'), mk('2026-09-11'), mk('2026-09-12')], { bbox: [0, 0, 1, 1] }, quality);
-  assert.deepEqual([a.clean, a.usable], [true, true]);
-  assert.deepEqual([b.clean, b.usable], [false, false]);
-  assert.deepEqual([c.clean, c.usable], [null, true]); // not probed: allowed, unknown
+  const mk = (date, track) => ({ date, start: `${date}T00:00:00Z`, track, footprints: [ring] });
+  const [a, b, c] = toEntries([mk('2026-09-11', 82), mk('2026-09-10', 60), mk('2026-07-01', 82)].sort((x, y) => x.date.localeCompare(y.date)), { bbox: [0, 0, 1, 1] });
+  assert.equal(c.usable, true);   // 2026-09-11 t82
+  assert.equal(b.covered, false); // 2026-09-10 t60
+  assert.equal(a.covered, false); // 2026-07-01 known broken
 });

@@ -44,7 +44,7 @@ export class Controls {
     const dirs = e && e.directions.length ? e.directions.join(', ') : 'unknown direction';
     const share = e && e.aoiCoverage != null ? ` / ${Math.round(e.aoiCoverage * 100)}% of area imaged` : '';
     this.el.info.textContent = e
-      ? `Track ${tracks} / ${dirs}${share}${e.covered ? (e.clean === false ? ' / GIBS returns noise in part of the area (hidden)' : '') : ' / no GIBS tiles for this date'}`
+      ? `Track ${tracks} / ${dirs}${share}${e.covered ? '' : ' / GIBS tiles missing or broken for this pass'}`
       : 'No scene selected';
     this.el.prev.disabled = !date || stepDate(this.entries, date, -1) === null;
     this.el.next.disabled = !date || stepDate(this.entries, date, 1) === null;
@@ -58,8 +58,7 @@ export class Controls {
 }
 
 function optionLabel(e) {
-  if (!e.covered) return `${e.date} (no GIBS tiles)`;
-  if (e.clean === false) return `${e.date} (GIBS noise in some tiles)`;
+  if (!e.covered) return `${e.date} (GIBS tiles missing or broken)`;
   if (!e.usable) return `${e.date} (partial, ${Math.round(e.aoiCoverage * 100)}%)`;
   return e.date;
 }

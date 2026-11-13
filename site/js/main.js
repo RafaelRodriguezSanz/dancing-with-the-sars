@@ -4,7 +4,6 @@ import { listScenesForArea } from './application/listScenes.js';
 import { pickDefaultDate } from './application/selectDate.js';
 import { CmrSceneRepository } from './infrastructure/cmrSceneRepository.js';
 import { FallbackSceneRepository } from './infrastructure/fallbackSceneRepository.js';
-import { QualityRepository } from './infrastructure/qualityRepository.js';
 import { MapView } from './presentation/mapView.js';
 import { Controls } from './presentation/controls.js';
 
@@ -22,7 +21,6 @@ try {
     new CmrSceneRepository(fetchFn),
     new FallbackSceneRepository(fetchFn),
     SANTA_LUCIA,
-    await new QualityRepository(fetchFn).load(),
   );
   controls.setEntries(entries, pickDefaultDate(entries));
   const usable = entries.filter((e) => e.usable).length;
