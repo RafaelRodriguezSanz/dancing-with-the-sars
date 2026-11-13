@@ -19,3 +19,6 @@ footer { font-size: .7rem; color: #999; }
 .loading[hidden] { display: none; }
 .spinner { width: 14px; height: 14px; border: 2px solid #555; border-top-color: #4da3ff; border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.layers { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.layer { display: flex; align-items: center; gap: 6px; font-size: 14px; }

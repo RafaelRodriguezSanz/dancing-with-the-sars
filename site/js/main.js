@@ -6,14 +6,23 @@ import { CmrSceneRepository } from './infrastructure/cmrSceneRepository.js';
 import { FallbackSceneRepository } from './infrastructure/fallbackSceneRepository.js';
 import { MapView } from './presentation/mapView.js';
 import { Controls } from './presentation/controls.js';
+import { LayerPanel } from './presentation/layerPanel.js';
+import { LayerState } from './application/layerState.js';
+import { LAYERS } from './layers/index.js';
 
 const fetchFn = (...args) => fetch(...args);
 const map = new MapView('map', SANTA_LUCIA);
+const state = new LayerState(LAYERS, ['nisar-gcov']);
+let currentDate = null;
+const refresh = (layer) => (state.isActive(layer.id) ? map.show(layer, layer.usesDate ? currentDate : null) : map.hide(layer.id));
 const controls = new Controls(document, {
-  onDate: (d) => map.showDate(d),
+  onDate: (d) => { currentDate = d; LAYERS.filter((l) => l.usesDate).forEach(refresh); },
   onOpacity: (v) => map.setOpacity(v),
   onReset: () => map.resetView(),
 });
+
+new LayerPanel(document.getElementById('layers'), LAYERS, state, (layer, on) => { state.toggle(layer.id, on); refresh(layer); });
+LAYERS.filter((l) => !l.usesDate).forEach(refresh);
 
 controls.setStatus('Loading scene list from NASA CMR...');
 try {
