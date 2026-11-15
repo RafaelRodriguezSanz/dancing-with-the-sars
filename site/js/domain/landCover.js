@@ -3,19 +3,19 @@
  * (same rules as scripts/nisar_subset.py, CLASSES). Pure data + pixel helper; no DOM.
  */
 export const LAND_COVER_CLASSES = Object.freeze([
-  { value: 5, key: 'permanent-water', label: 'Permanent water', color: [28, 78, 168], alpha: 0.9,
+  { value: 5, key: 'permanent-water', label: 'Permanent water', color: [0, 229, 255], alpha: 0.85,
     rule: 'Very low HH and HV on the median of all dates: rivers, lakes, reservoirs.',
     caveat: 'Rivers narrower than about two pixels (160 m from afar, 30 m zoomed in) can be missed.' },
-  { value: 1, key: 'water', label: 'Water on this date only', color: [86, 196, 245], alpha: 0.95,
+  { value: 1, key: 'water', label: 'Water on this date only', color: [124, 249, 255], alpha: 0.95,
     rule: 'Very low HH and HV on this date, but not on most dates: flooding or high water.',
     caveat: 'Smooth bare or freshly tilled fields look the same.' },
-  { value: 2, key: 'woody', label: 'Woody vegetation', color: [44, 122, 68], alpha: 0.8,
+  { value: 2, key: 'woody', label: 'Woody vegetation', color: [57, 255, 136], alpha: 0.55,
     rule: 'High HV: radar scatters inside branches and trunks.',
     caveat: 'Leafy towns read as woody here; turn on Built-up areas to cover them with the OpenStreetMap towns.' },
-  { value: 3, key: 'double-bounce', label: 'Double bounce (flooded vegetation, structures)', color: [236, 84, 178], alpha: 0.95,
+  { value: 3, key: 'double-bounce', label: 'Double bounce (flooded vegetation, structures)', color: [255, 61, 242], alpha: 0.95,
     rule: 'Very high HH, much higher than HV: double bounce (walls, or stems standing in water).',
     caveat: 'On a single date: flooded marsh or isolated buildings. Towns, bright on every date, are in the Built-up layer.' },
-  { value: 4, key: 'herbaceous', label: 'Grassland and crops', color: [222, 200, 128], alpha: 0.4,
+  { value: 4, key: 'herbaceous', label: 'Grassland and crops', color: [255, 224, 102], alpha: 0.2,
     rule: 'Everything else with data.',
     caveat: 'Pasture and crops are not separated here.' },
 ]);

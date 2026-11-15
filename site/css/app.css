@@ -294,3 +294,54 @@ button.ghost:hover { background: rgba(255, 255, 255, .08); border-color: transpa
 .quick-areas span { text-shadow: 0 1px 3px #000; }
 .quick-areas button { min-height: 0; padding: 3px 10px; border-radius: 999px; font-size: .72rem; background: rgba(4, 6, 12, .7); border-color: rgba(255, 255, 255, .14); }
 .quick-areas button:hover { border-color: rgba(92, 200, 255, .55); color: #fff; }
+
+/* Start-up intro: spinning planet, NISAR on its orbit, radar pulses. CSS only. */
+.splash { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: radial-gradient(ellipse at 50% 40%, #0b1630 0%, #050914 55%, #02040a 100%); color: #e8f1ff; transition: opacity .9s ease, transform .9s ease; }
+.splash-out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.splash-stars { position: absolute; inset: 0; opacity: .7;
+  background-image: radial-gradient(1px 1px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 78% 12%, #cfe3ff, transparent),
+    radial-gradient(1.5px 1.5px at 30% 72%, #fff, transparent), radial-gradient(1px 1px at 88% 64%, #fff, transparent),
+    radial-gradient(1px 1px at 55% 28%, #9fc3ff, transparent), radial-gradient(1.5px 1.5px at 8% 86%, #fff, transparent),
+    radial-gradient(1px 1px at 66% 90%, #cfe3ff, transparent), radial-gradient(1px 1px at 42% 8%, #fff, transparent),
+    radial-gradient(1px 1px at 94% 36%, #fff, transparent), radial-gradient(1px 1px at 20% 46%, #9fc3ff, transparent);
+  animation: twinkle 4s ease-in-out infinite alternate; }
+@keyframes twinkle { from { opacity: .45; } to { opacity: .85; } }
+.planet-wrap { position: relative; width: 220px; height: 220px; margin-bottom: 18px; }
+.planet-glow { position: absolute; inset: -26px; border-radius: 50%; background: radial-gradient(circle, rgba(0,229,255,.35) 0%, rgba(0,229,255,.08) 45%, transparent 70%); animation: breathe 3s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.06); opacity: .8; } }
+.planet { position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #2a7bd8 0%, #0d3f8f 45%, #061a40 100%);
+  box-shadow: inset -18px -12px 40px rgba(0,0,0,.6), 0 0 30px rgba(0,229,255,.35); }
+.planet-land { position: absolute; top: 0; left: 0; width: 200%; height: 100%; opacity: .9;
+  background-image:
+    radial-gradient(ellipse 14% 22% at 12% 35%, #39ff88 0 60%, transparent 62%),
+    radial-gradient(ellipse 9% 14% at 20% 62%, #2fd47a 0 60%, transparent 62%),
+    radial-gradient(ellipse 16% 12% at 34% 24%, #39ff88 0 60%, transparent 62%),
+    radial-gradient(ellipse 7% 18% at 41% 58%, #ffe066 0 55%, transparent 58%),
+    radial-gradient(ellipse 12% 9% at 6% 80%, #2fd47a 0 60%, transparent 62%),
+    radial-gradient(ellipse 14% 22% at 62% 35%, #39ff88 0 60%, transparent 62%),
+    radial-gradient(ellipse 9% 14% at 70% 62%, #2fd47a 0 60%, transparent 62%),
+    radial-gradient(ellipse 16% 12% at 84% 24%, #39ff88 0 60%, transparent 62%),
+    radial-gradient(ellipse 7% 18% at 91% 58%, #ffe066 0 55%, transparent 58%),
+    radial-gradient(ellipse 12% 9% at 56% 80%, #2fd47a 0 60%, transparent 62%);
+  filter: blur(.6px) saturate(.85); animation: spin-land 14s linear infinite; }
+@keyframes spin-land { to { transform: translateX(-50%); } }
+.planet-shade { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 30% 28%, rgba(255,255,255,.25) 0%, transparent 35%), radial-gradient(circle at 75% 75%, rgba(0,0,0,.65) 0%, transparent 60%); }
+.pulse { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0,229,255,.6); animation: pulse 3s ease-out infinite; }
+.pulse.p2 { animation-delay: 1s; }
+.pulse.p3 { animation-delay: 2s; }
+@keyframes pulse { from { transform: scale(1); opacity: .8; } to { transform: scale(1.7); opacity: 0; } }
+.orbit { position: absolute; inset: -40px; border-radius: 50%; border: 1px dashed rgba(207,227,255,.25); transform: rotateX(68deg); animation: orbit 6s linear infinite; }
+@keyframes orbit { to { transform: rotateX(68deg) rotateZ(360deg); } }
+.sat { position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px; }
+.sat i { position: absolute; inset: 3px; background: #fff; border-radius: 2px; box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff; }
+.sat b { position: absolute; top: 5px; left: -10px; width: 34px; height: 4px; background: linear-gradient(90deg, #7cf9ff, #1f5fbf 45%, #1f5fbf 55%, #7cf9ff); border-radius: 1px; }
+.splash-title { margin: 0; font-size: clamp(1.4rem, 4vw, 2.2rem); font-weight: 700; letter-spacing: .04em;
+  background: linear-gradient(90deg, #7cf9ff, #ffffff, #ff3df2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.splash-sub { margin: 0; font-size: .9rem; color: #9fb3d1; }
+.splash-bar { width: min(280px, 70vw); height: 4px; margin-top: 14px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+.splash-bar i { display: block; height: 100%; width: 5%; border-radius: 4px; background: linear-gradient(90deg, #00e5ff, #ff3df2); transition: width .5s ease; }
+.splash-step { margin: 0; min-height: 1.2em; font-size: .78rem; color: #9fb3d1; }
+@media (prefers-reduced-motion: reduce) { .splash, .splash * { animation: none !important; transition: opacity .3s !important; } }
+@media (max-width: 640px) { .planet-wrap { width: 150px; height: 150px; } }

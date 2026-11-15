@@ -8,6 +8,10 @@ import { paintClasses } from '../domain/landCover.js';
 const FADE_MS = 700;
 const GIBS_BASE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg';
 const PROTOCOL = 'sarclasses'; // class tiles recoloured in the browser: sarclasses://<layer id>|<version>|<tile url>
+const START_KM = 1000; // width of the view the start-up flight begins from
+/** Map zoom (512 px tiles) at which the window shows `km` across at latitude `lat`. */
+const zoomForWidth = (km, lat) => Math.log2((40075016.686 * Math.cos((lat * Math.PI) / 180) * window.innerWidth) / (512 * km * 1000));
+
 const STYLE = {
   version: 8,
   projection: { type: 'globe' },
@@ -19,7 +23,7 @@ const STYLE = {
   },
   layers: [
     { id: 'space', type: 'background', paint: { 'background-color': '#04060c' } },
-    { id: 'bluemarble', type: 'raster', source: 'bluemarble', paint: { 'raster-saturation': -0.2 } },
+    { id: 'bluemarble', type: 'raster', source: 'bluemarble', paint: { 'raster-saturation': -0.6, 'raster-brightness-max': 0.55 } }, // dimmed so the neon classes stand out
     { // street map fades in when close, darkened (inverted) to match the theme
       id: 'osm', type: 'raster', source: 'osm', minzoom: 6,
       paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 8, 0.9], 'raster-brightness-min': 0.92, 'raster-brightness-max': 0.08, 'raster-hue-rotate': 180, 'raster-saturation': -0.5, 'raster-contrast': 0.1 },
@@ -46,7 +50,7 @@ export class MapView {
     this.registerClassProtocol();
     const [w, s, e, n] = aoi.bbox;
     this.map = new maplibregl.Map({
-      container: elementId, style: STYLE, center: [(w + e) / 2, (s + n) / 2 - 8], zoom: 1.3,
+      container: elementId, style: STYLE, center: [(w + e) / 2, (s + n) / 2], zoom: zoomForWidth(START_KM, (s + n) / 2), // about 1000 km across; the intro flight comes in from here
       attributionControl: { compact: true }, maxPitch: 70,
     });
     this.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
@@ -54,7 +58,6 @@ export class MapView {
     this.map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
     this.ready = new Promise((res) => this.map.once('load', res));
     this.map.on('error', (ev) => this.onSourceError(ev));
-    this.first = true;
     this.setArea(aoi);
   }
 
@@ -64,16 +67,25 @@ export class MapView {
     await this.ready;
     this.map.getSource('aoi').setData(box(aoi.bbox));
     const [w, s, e, n] = aoi.bbox;
-    this.map.fitBounds([[w, s], [e, n]], { padding: this.freePadding(), duration: this.first ? 3500 : 1500, essential: true });
-    this.first = false;
     for (const slot of this.slots.values()) { slot.key = null; this.show(slot.layer, slot.date); }
+    if (!this.introFlown) {
+      // Start-up (the area is set twice: by the constructor and by main.js): every call waits for the intro to
+      // fade (this.intro, a promise), then a single "Go to area" flight starts from START_KM out.
+      await this.intro;
+      if (this.introFlown || this.bbox !== aoi.bbox) return; // already flown, or another area was picked meanwhile
+      this.introFlown = true;
+      this.resetView({ duration: 4500 }); // same flight as "Go to area", from START_KM out, with a fixed length
+      return;
+    }
+    this.map.fitBounds([[w, s], [e, n]], { padding: this.freePadding(), duration: 1500, essential: true });
   }
 
   /** Smooth flight back to the area: zooms out, glides and zooms in; the length follows the distance.
    * `essential` keeps it animated even with the system "reduce motion" setting (MapLibre would jump otherwise). */
-  resetView() {
+  resetView(timing = { speed: 0.9, maxDuration: 4500 }) {
+    // Note: a flight longer than maxDuration jumps instantly in MapLibre, so the intro passes a fixed duration.
     const [w, s, e, n] = this.bbox;
-    this.map.fitBounds([[w, s], [e, n]], { padding: this.freePadding(), speed: 0.9, curve: 1.5, maxDuration: 4500, essential: true,
+    this.map.fitBounds([[w, s], [e, n]], { padding: this.freePadding(), curve: 1.5, ...timing, essential: true,
       easing: (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2) });
   }
 
