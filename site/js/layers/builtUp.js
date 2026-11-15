@@ -1,11 +1,11 @@
 import { defineLayer } from '../domain/layer.js';
-import { SANTA_LUCIA } from '../domain/scene.js';
+import { URUGUAY } from '../domain/scene.js';
 import { DATA } from './nisarCalibrated.js';
 import { OsmTownRepository } from '../infrastructure/osmTowns.js';
 
 /** Two sources, switched separately in the side panel. `fill` = fill opacity, so towns cover the land cover below. */
 export const BUILT_UP_KINDS = [
-  { value: 2, kind: 'town', label: 'Towns and cities (OpenStreetMap)', color: [235, 80, 80], fill: 0.5,
+  { value: 2, kind: 'town', label: 'Towns and cities (OpenStreetMap)', color: [205, 212, 225], fill: 0.5,
     rule: 'Residential, commercial, industrial or retail land mapped in OpenStreetMap.',
     caveat: 'As complete as the local OpenStreetMap mapping; not from the radar.' },
   { value: 1, kind: 'built-up', label: 'Built-up seen by the radar (NISAR)', color: [255, 140, 60],
@@ -30,7 +30,7 @@ export default defineLayer({
   title: 'Built-up areas',
   description: 'Towns from OpenStreetMap combined with buildings found by the radar, kept apart from woodland (both return a strong signal). Click one for details.',
   caveat: 'Radar part from 80 m pixels: clusters under 2.5 ha are dropped. OpenStreetMap is loaded live for the selected area.',
-  region: { name: 'Santa Lucía, Uruguay', bbox: SANTA_LUCIA.bbox },
+  region: { name: 'Uruguay', bbox: URUGUAY.bbox },
   classes: BUILT_UP_KINDS,
   tiers: [{
     id: 'built-up', label: 'OpenStreetMap + NISAR built-up', kind: 'geojson',

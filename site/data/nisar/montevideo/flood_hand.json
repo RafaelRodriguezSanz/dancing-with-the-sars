@@ -1,0 +1,36 @@
+{
+ "area": "Montevideo",
+ "bbox": [
+  -56.45,
+  -34.97,
+  -56.0,
+  -34.7
+ ],
+ "zoom": 10,
+ "tx0": 351,
+ "ty0": 617,
+ "width": 512,
+ "height": 512,
+ "corners": [
+  [
+   -56.601562,
+   -34.597042
+  ],
+  [
+   -55.898438,
+   -34.597042
+  ],
+  [
+   -55.898438,
+   -35.173808
+  ],
+  [
+   -56.601562,
+   -35.173808
+  ]
+ ],
+ "scale_m": 0.1,
+ "nodata": 255,
+ "water": "JRC Global Surface Water occurrence >= 50% and the sea (elevation <= 0)",
+ "terrain": "NASA SRTM via Terrain Tiles (AWS Open Data)"
+}

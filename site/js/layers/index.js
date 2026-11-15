@@ -4,6 +4,7 @@
 import landCover from './landCover.js';
 import alerts from './alerts.js';
 import builtUp from './builtUp.js';
+import wind from './wind.js';
 
-export const LAYERS = [landCover, builtUp, alerts];
+export const LAYERS = [landCover, builtUp, alerts, wind];
 export const LAYERS_HEADING = 'NISAR radar';

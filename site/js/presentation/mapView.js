@@ -36,6 +36,7 @@ export class MapView {
     this.opacity = 0.8;
     this.order = []; // layer ids bottom -> top, set by the composition root
     this.loadingEl = document.getElementById('loading');
+    this.quiet = false; // true during the start-up card: one loader at a time
     this.fadeMs = FADE_MS; // cross-fade length; Evolution sets it per frame (withFade) so the fade fills the gap between dates
     this.slots = new Map(); // layer id -> { layer, date, key, group, kind }
     this.busy = new Map(); // layer id -> progress text
@@ -63,12 +64,41 @@ export class MapView {
     await this.ready;
     this.map.getSource('aoi').setData(box(aoi.bbox));
     const [w, s, e, n] = aoi.bbox;
-    this.map.fitBounds([[w, s], [e, n]], { padding: 60, duration: this.first ? 3500 : 1500, essential: true });
+    this.map.fitBounds([[w, s], [e, n]], { padding: this.freePadding(), duration: this.first ? 3500 : 1500, essential: true });
     this.first = false;
     for (const slot of this.slots.values()) { slot.key = null; this.show(slot.layer, slot.date); }
   }
 
-  resetView() { const [w, s, e, n] = this.bbox; this.map.fitBounds([[w, s], [e, n]], { padding: 60, duration: 1200 }); }
+  /** Smooth flight back to the area: zooms out, glides and zooms in; the length follows the distance.
+   * `essential` keeps it animated even with the system "reduce motion" setting (MapLibre would jump otherwise). */
+  resetView() {
+    const [w, s, e, n] = this.bbox;
+    this.map.fitBounds([[w, s], [e, n]], { padding: this.freePadding(), speed: 0.9, curve: 1.5, maxDuration: 4500, essential: true,
+      easing: (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2) });
+  }
+
+  /** Map padding that keeps a fitted area clear of the floating cards (search bar on top, info card on the left,
+   * layers on the right; on a phone they sit above and below). Falls back to a plain margin if too little is left. */
+  freePadding(margin = 14) {
+    const box = this.map.getContainer().getBoundingClientRect();
+    const rect = (sel) => { const el = document.querySelector(sel); const r = el?.getBoundingClientRect(); return r?.width ? r : null; };
+    const pad = { top: margin, bottom: margin, left: margin, right: margin };
+    const search = rect('.search-wrap'); // search bar, ready-area chips and search message
+    if (search) pad.top = search.bottom - box.top + margin;
+    const progress = rect('.process-card'); // bottom centre while an area is analyzed; keep room for it even before it shows
+    if (!progress) pad.bottom = 96;
+    else if (progress.top - box.top > box.height / 2) pad.bottom = box.bottom - progress.top + margin;
+    else pad.top = Math.max(pad.top, progress.bottom - box.top + margin); // phone: it sits under the search bar
+    for (const r of [rect('.topbar'), rect('.right-col')].filter(Boolean)) {
+      const narrow = r.width < box.width * 0.45; // a side card; a wide one is a top or bottom band
+      if (narrow && r.left - box.left < box.width / 2) pad.left = Math.max(pad.left, r.right - box.left + margin);
+      else if (narrow) pad.right = Math.max(pad.right, box.right - r.left + margin);
+      else if (r.top - box.top < box.height / 2) pad.top = Math.max(pad.top, r.bottom - box.top + margin);
+      else pad.bottom = Math.max(pad.bottom, box.bottom - r.top + margin);
+    }
+    const roomy = box.width - pad.left - pad.right > 160 && box.height - pad.top - pad.bottom > 160;
+    return roomy ? pad : 40;
+  }
 
   /** Current view as [w, s, e, n]. */
   viewBox() {
@@ -94,6 +124,7 @@ export class MapView {
     if (slot.key === key) return;
     slot.key = key;
     if (ranges[0].tier.kind === 'geojson') { this.showGeoJson(slot, ranges[0].tier, date); return; }
+    if (ranges[0].tier.kind === 'custom') { this.showCustom(slot, ranges[0].tier, date, key); return; }
     if (slot.pending) this.removeGroup(slot.pending); // a newer date replaces one still loading
     const group = { id: `${layer.id}::${this.seq += 1}`, parts: [], failed: false };
     slot.pending = group;
@@ -208,6 +239,7 @@ export class MapView {
       this.removeGroup(slot.group);
       if (slot.vector) for (const lid of slot.vector) if (this.map.getLayer(lid)) this.map.removeLayer(lid);
       if (slot.vector && this.map.getSource(id)) this.map.removeSource(id);
+      slot.custom?.remove();
       this.popup?.remove();
     });
   }
@@ -286,6 +318,19 @@ export class MapView {
   kindFilter(layer) {
     const on = this.classFilter(layer.id);
     return ['in', ['get', 'kind'], ['literal', layer.classes.filter((c) => on.has(c.value)).map((c) => c.kind)]];
+  }
+
+  /** Layer that draws itself (e.g. animated wind): tier.mount() returns an object with remove(). */
+  async showCustom(slot, tier, date, key) {
+    const id = slot.layer.id;
+    this.setBusy(id, slot.layer.title);
+    await this.ready;
+    let view = null;
+    try { view = await tier.mount(this, date, this.bbox); } catch (err) { console.warn(`${id}:`, err.message); }
+    if (this.slots.get(id) !== slot || slot.key !== key) { view?.remove(); return; } // hidden or replaced meanwhile
+    this.setBusy(id, null);
+    slot.custom?.remove();
+    slot.custom = view;
   }
 
   async showGeoJson(slot, tier, date) {
@@ -397,8 +442,9 @@ export class MapView {
     return [p.lng, p.lat];
   }
 
-  /** Radar-scan animation over bbox while it is being processed; null removes it. Follows the map as it moves. */
-  setScanning(bbox, progress = 0) {
+  /** Radar-scan animation over bbox while it is being loaded or processed; null removes it. Follows the map as it
+   * moves. It has no text: the start-up card or the analysis card next to it already says what happens and how far. */
+  setScanning(bbox) {
     if (!bbox) {
       if (this.scan) { this.map.off('move', this.scan.place); this.scan.el.remove(); this.scan = null; }
       return;
@@ -406,7 +452,7 @@ export class MapView {
     if (!this.scan) {
       const el = document.createElement('div');
       el.className = 'radar-scan';
-      el.innerHTML = '<div class="radar-sweep"></div><div class="radar-track"></div><span class="radar-label"></span>';
+      el.innerHTML = '<div class="radar-sweep"></div><div class="radar-track"></div>';
       this.map.getContainer().append(el);
       const place = () => {
         const [w, s, e, n] = this.scan.bbox;
@@ -420,12 +466,12 @@ export class MapView {
     }
     this.scan.bbox = bbox;
     this.scan.place();
-    this.scan.el.querySelector('.radar-label').textContent = `Scanning with NISAR · ${Math.round(progress * 100)}%`;
   }
 
+  /** Loading pill listing what is still loading. Kept hidden while `quiet` (the start-up card covers it). */
   setBusy(id, text) {
     if (text) this.busy.set(id, text); else this.busy.delete(id);
-    this.loadingEl.hidden = this.busy.size === 0;
+    this.loadingEl.hidden = this.quiet || this.busy.size === 0;
     this.loadingEl.querySelector('span').textContent = [...this.busy.values()].join(' · ') || '';
   }
 }

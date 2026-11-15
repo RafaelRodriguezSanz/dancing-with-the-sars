@@ -1,8 +1,8 @@
 /** User-selected area of interest: validation and URL-hash round trip. Pure. */
 import { createAreaOfInterest } from './scene.js';
 
-/** Largest side (degrees) a selection may have, so CMR queries and tile loads stay small. */
-export const MAX_AREA_SPAN_DEG = 2;
+/** Largest side (degrees) a selection may have: a mid-size country (Uruguay is 5.4°). Same as MAX_SPAN_DEG in scripts/serve.py. */
+export const MAX_AREA_SPAN_DEG = 10;
 
 const round = (v) => Math.round(v * 1e4) / 1e4;
 
