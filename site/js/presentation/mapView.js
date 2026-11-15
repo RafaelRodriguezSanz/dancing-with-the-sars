@@ -175,10 +175,9 @@ export class MapView {
         bounds: this.bbox, attribution: tier.attribution,
       });
     }
-    const crisp = tier.kind === 'classes' || tier.kind === 'classTiles';
     this.map.addLayer({
       id: part.lid, type: 'raster', source: sid, minzoom, maxzoom,
-      paint: { 'raster-opacity': 0, 'raster-opacity-transition': { duration: FADE_MS, delay: 0 }, 'raster-fade-duration': 250, 'raster-resampling': crisp ? 'nearest' : 'linear' },
+      paint: { 'raster-opacity': 0, 'raster-opacity-transition': { duration: FADE_MS, delay: 0 }, 'raster-fade-duration': 250, 'raster-resampling': 'linear' }, // linear also for classes: soft edges instead of hard pixel blocks
     }, this.beforeId(layer.id));
     group.parts.push(part);
   }

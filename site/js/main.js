@@ -9,7 +9,7 @@ import { Controls } from './presentation/controls.js';
 import { LayerPanel } from './presentation/layerPanel.js';
 import { LayerState } from './application/layerState.js';
 import { LAYERS, LAYERS_HEADING } from './layers/index.js';
-import { DATA, HIRES_DATES, VIEW, imageUrl, setCalibratedArea } from './layers/nisarCalibrated.js';
+import { DATA, HIRES_DATES, VIEW, imageUrl, precomputedDirs, setCalibratedArea } from './layers/nisarCalibrated.js';
 import { ProcessingApi } from './infrastructure/processingApi.js';
 import { ProcessPanel } from './presentation/processPanel.js';
 import { ValidationRepository } from './infrastructure/validationRepository.js';
@@ -182,7 +182,7 @@ document.getElementById('evolution').addEventListener('click', async () => {
 // El Niño flood response: flood scenario, dry refuges and evacuation routes for the current view.
 const flood = new FloodPanel(document, map, new OsmEvacuationRepository(fetchFn), fetchFn, {
   nisarWater: () => (currentDate ? { url: `${DATA.dir}/${currentDate}_classes.png`, bbox: area.bbox } : null),
-  dataDir: () => DATA.dir,
+  dataDirs: (view) => [...new Set([DATA.dir, ...precomputedDirs(view)])],
 });
 // The main "El Niño floods" button opens the card and analyzes the view in one click; closing clears the map.
 const floodCard = document.getElementById('flood');
