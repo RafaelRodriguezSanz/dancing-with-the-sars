@@ -14,6 +14,31 @@
 <main class="app">
   <div id="map" aria-label="Globe map"></div>
 
+  <div class="search-wrap">
+    <form id="place-form" class="glass searchbar" role="search" title="Find a country, region or city by name (OpenStreetMap Nominatim). Analyzing a new one needs the local server and your Earthdata token: see About.">
+      <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+      <input id="place" type="search" placeholder="Search a country, region or city" aria-label="Country, region or city" autocomplete="off" spellcheck="false">
+      <button class="search-go" type="submit">Find</button>
+      <span class="sep" aria-hidden="true"></span>
+      <button id="draw-area" class="ghost" type="button" title="Drag a box on the map">Draw area</button>
+      <button id="use-view" class="ghost" type="button" title="Use what you see on the map as the area">Use this view</button>
+      <button id="reset" class="ghost" type="button" title="Fly back to the current area">Go to area</button>
+    </form>
+    <div class="quick-areas" aria-label="Ready areas">
+      <span>Ready:</span>
+      <button type="button" data-area="santa-lucia">Santa Lucía</button>
+      <button type="button" data-area="montevideo">Montevideo</button>
+      <button type="button" data-area="uruguay">Uruguay</button>
+    </div>
+    <div id="search-msg" class="area-chip" role="status"></div>
+  </div>
+
+  <div id="process-row" class="glass process-card" hidden>
+    <progress id="process-bar" class="process-bar" max="1" value="0" hidden></progress>
+    <button id="process" class="primary" type="button" hidden>Analyze area</button>
+    <div id="process-info" class="info"></div>
+  </div>
+
   <header class="glass topbar">
     <div class="brand">
       <span class="logo" aria-hidden="true"></span>
@@ -24,73 +49,75 @@
     </div>
     <div class="row date-row">
       <button id="prev" class="icon" type="button" aria-label="Previous date">&#8249;</button>
-      <select id="date-select" aria-label="Acquisition date"></select>
+      <button id="date-select" class="date-btn" type="button" aria-label="Acquisition date" aria-haspopup="dialog" aria-expanded="false"></button>
       <button id="next" class="icon" type="button" aria-label="Next date">&#8250;</button>
     </div>
-    <button id="evolution" class="primary" type="button" title="Play every processed date and chart what changes inside the current view">&#9654;&ensp;Evolution of this view</button>
+    <div class="row actions">
+      <button id="evolution" class="primary" type="button" title="Play every processed date and chart what changes inside the current view">&#9654;&ensp;Evolution</button>
+      <button id="flood-open" class="flood-btn" type="button" aria-controls="flood" title="Which ground a river rise would cover in the current view, and dry public buildings to go to">&#127783;&ensp;El Ni&ntilde;o floods</button>
+    </div>
     <div id="scene-info" class="info">No scene selected</div>
-    <div id="status" class="status" role="status">Starting...</div>
-    <details class="tools">
-      <summary>Area &amp; display</summary>
-      <div class="row">
-        <label for="opacity">Opacity</label>
-        <input id="opacity" type="range" min="0" max="100" value="80">
-      </div>
-      <label class="row check" title="NISAR looks at this area from three orbit passes with different angles; this removes the colour jump between them">
-        <input id="steady" type="checkbox" checked> Steady colours (remove viewing-angle flicker)
+    <div class="row display-row">
+      <label for="opacity">Opacity</label>
+      <input id="opacity" type="range" min="0" max="100" value="80">
+      <label class="check" title="NISAR looks at this area from three orbit passes with different angles; this removes the colour jump between them">
+        <input id="steady" type="checkbox" checked> Steady colours
       </label>
-      <div class="row">
-        <button id="draw-area" type="button">Draw area</button>
-        <button id="use-view" type="button">Use this view</button>
-        <button id="reset" type="button">Go to area</button>
-      </div>
-      <div id="area-info" class="info"></div>
-      <div id="process-row" class="row" hidden>
-        <button id="process" class="primary" type="button" hidden>Analyze area</button>
-        <progress id="process-bar" class="process-bar" max="1" value="0" hidden></progress>
-        <div id="process-info" class="info"></div>
-      </div>
-    </details>
+    </div>
+    <div id="status" class="status" role="status">Starting...</div>
     <details id="validation" class="tools" hidden>
       <summary>How good is it?</summary>
       <div id="validation-body"></div>
     </details>
-    <details id="flood" class="tools">
-      <summary>El Niño flood response</summary>
-      <p class="hint">El Niño years bring heavy rain to Uruguay and rivers such as the Uruguay, Negro, Yí, Cuareim and Olimar overflow. Zoom in to a riverside town, then see which ground a river rise would cover, which public buildings stay dry as refuges and a road route that avoids flooded streets.</p>
-      <div class="row">
-        <button id="flood-run" class="primary" type="button">Analyze flood risk in this view</button>
-      </div>
-      <div class="row">
-        <label for="flood-rise">River rise</label>
-        <input id="flood-rise" type="range" min="0" max="10" step="0.5" value="3" disabled>
-        <output id="flood-rise-value" for="flood-rise">3.0 m</output>
-      </div>
-      <div class="row">
-        <button id="flood-pick" type="button" disabled>Plan evacuation from a point</button>
-        <button id="flood-clear" type="button" hidden>Clear</button>
-      </div>
-      <div id="flood-info" class="info" role="status"></div>
-      <div id="flood-rain" class="info"></div>
-      <p class="caveat">Planning aid, not an official plan: in an emergency follow SINAE and the departmental Cecoed. Simple model: water level spreads from rivers over terrain (NASA SRTM, ~30 m); it ignores levees, drains and one-way streets. Refuges are public buildings from OpenStreetMap, not confirmed shelters.</p>
-    </details>
     <details id="about" class="tools">
       <summary>About</summary>
-      <p class="caveat">NISAR radar layers are products derived from real NISAR GCOV backscatter (HH, HV in dB) cut from NASA Earthdata: precomputed for Uruguay and processed on demand for any other area by the local server, scripts/serve.py. Alerts are candidates from simple rules, not confirmed events. The arrows skip dates without tiles or whose pass covers less than 95% of the box (still listed in the menu).</p>
+      <p class="caveat">NISAR radar layers are products derived from real NISAR GCOV backscatter (HH, HV in dB) cut from NASA Earthdata: precomputed for Uruguay and processed on demand for any other area by the local server, scripts/serve.py. Alerts are candidates from simple rules, not confirmed events. The arrows skip dates without tiles or whose pass covers less than 95% of the box (still in the calendar, with a dashed outline when they have no products).</p>
       <p class="credits">Made by Rafael Rodriguez Sanz, Montevideo, Uruguay, for the NASA Space Apps Challenge 2026, with AI assistance (Claude Code). Data: NISAR GCOV (NASA-ISRO) via NASA Earthdata / ASF DAAC, NASA CMR, NASA GIBS, NASA SRTM, Open-Meteo. Basemap, towns, roads and buildings &copy; OpenStreetMap contributors (ODbL).</p>
-      <div class="row"><button id="readme-open" type="button">Read the README</button></div>
+      <h3 class="about-head">Other countries</h3>
+      <p class="hint">This public site has Uruguay precomputed. Any other country or region (up to about 10° per side, e.g. Paraguay or Costa Rica) can be analyzed by running the app on your own computer with a free NASA Earthdata token:</p>
+      <ol class="steps">
+        <li>Get a token at urs.earthdata.nasa.gov (Generate Token).</li>
+        <li>Clone the repository, copy <code>.env.example</code> to <code>.env</code> and paste the token there (never share it).</li>
+        <li>Run <code>make</code> and open http://127.0.0.1:8000/site/</li>
+        <li>Type the country in the search bar at the top and press <b>Find</b>, then <b>Analyze area</b>. Radar products, alerts and the flood map are built for it.</li>
+      </ol>
+      <div class="row"><button type="button" data-readme="analyze-another-country">How to analyze another country</button><button id="readme-open" type="button">Read the README</button></div>
     </details>
   </header>
 
-  <aside id="side-panel" class="glass side-panel" aria-label="Layers">
+  <div class="right-col">
+    <aside id="side-panel" class="glass side-panel" aria-label="Layers">
     <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="panel-body">Layers</button>
     <div id="panel-body" class="panel-body"></div>
   </aside>
+    <section id="flood" class="glass flood-card" aria-label="El Niño flood response" hidden>
+    <div class="card-head"><strong>El Niño flood response</strong><button id="flood-close" class="icon" type="button" aria-label="Close">&times;</button></div>
+    <p class="hint">El Niño years bring heavy rain and rivers such as the Uruguay, Negro, Yí, Cuareim and Olimar overflow. The whole country answers instantly; zoom in to a riverside town (about 30 km across) for streams, roads and a route to a dry refuge.</p>    <div class="row">
+      <button id="flood-run" class="primary" type="button">Analyze this view again</button>
+    </div>
+    <div class="row">
+      <label for="flood-rise">River rise</label>
+      <input id="flood-rise" type="range" min="0" max="10" step="0.5" value="3" disabled>
+      <output id="flood-rise-value" for="flood-rise">3.0 m</output>
+    </div>
+    <div class="row">
+      <button id="flood-pick" type="button" disabled>Plan evacuation from a point</button>
+      <button id="flood-clear" type="button" hidden>Clear</button>
+    </div>
+    <div id="flood-info" class="info" role="status"></div>
+    <div id="flood-rain" class="info"></div>
+    <p class="caveat">Planning aid, not an official plan: in an emergency follow SINAE and the departmental Cecoed. Simple model: water level spreads from rivers over terrain (NASA SRTM, ~30 m); it ignores levees, drains and one-way streets. Refuges are public buildings from OpenStreetMap, not confirmed shelters.</p>
+  </section>
+  </div>
 
   <section id="evolution-panel" class="glass evo-panel" aria-label="Evolution of the view" hidden>
     <div class="evo-head"><button class="evo-play" type="button">Play</button><strong class="evo-date"></strong><button class="evo-close icon" type="button" aria-label="Close">&times;</button></div>
     <div class="evo-body"></div>
   </section>
+
+  <div id="area-info" class="glass coords-chip" title="Selected area: name and west, south to east, north (degrees)"></div>
+
+  <div id="date-cal" class="glass date-cal" role="dialog" aria-label="Pick a date" hidden></div>
 
   <dialog id="readme" class="glass readme" aria-label="README">
     <div class="readme-head"><strong>README</strong><button id="readme-close" class="icon" type="button" aria-label="Close">&times;</button></div>

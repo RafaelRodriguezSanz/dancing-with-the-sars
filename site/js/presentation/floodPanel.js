@@ -7,18 +7,24 @@
  */
 import { heightAboveWater, isFlooded, rankSites, SAFE_MARGIN_M } from '../domain/floodRisk.js';
 import { buildGraph, evacuationPlan, nearestNode } from '../domain/routing.js';
-import { loadTerrain, TERRAIN_ATTRIBUTION } from '../infrastructure/terrain.js';
+import { latToY, loadTerrain, lonToX, TERRAIN_ATTRIBUTION, xToLon, yToLat } from '../infrastructure/terrain.js';
 import { rainForecast } from '../infrastructure/rainForecast.js';
 
 const MAX_SPAN = 0.3; // degrees: a city or a stretch of river; roads of a bigger view are too many for Overpass
+const MAX_GRID = 1600; // cells per side drawn from the precomputed grid (country view is downsampled to this)
 const STATUS_COLOR = { safe: '#3ddc84', 'at-risk': '#ffc94d', flooded: '#ff5a5a', unknown: '#9aa4b2' };
 const km = (m) => (m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`);
 const point = (p, props) => ({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: p } });
 const line = (coords, props) => ({ type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: coords } });
 
 export class FloodPanel {
-  /** nisarWater() -> {url, bbox} of the class image of the selected date (water = 1 or 5), or null. */
-  constructor(doc, map, osm, fetchFn, { nisarWater }) {
+  /**
+   * nisarWater() -> {url, bbox} of the class image of the selected date (water = 1 or 5), or null.
+   * dataDir() -> folder of the selected area; its flood_hand.png / flood_sites.json (scripts/flood_precompute.py)
+   * answer views too big for the detailed analysis.
+   */
+  constructor(doc, map, osm, fetchFn, { nisarWater, dataDir }) {
+    this.dataDir = dataDir;
     this.map = map;
     this.osm = osm;
     this.fetch = fetchFn;
@@ -53,10 +59,7 @@ export class FloodPanel {
   async run() {
     const view = this.map.viewBox();
     const [w, s, e, n] = view;
-    if (e - w > MAX_SPAN || n - s > MAX_SPAN) {
-      this.say('Zoom in to a town or a stretch of river (about 30 km across or less), then press the button again.');
-      return;
-    }
+    if (e - w > MAX_SPAN || n - s > MAX_SPAN) { this.runPrecomputed(view); return; }
     this.el.run.disabled = true;
     let ok = false;
     try {
@@ -69,9 +72,7 @@ export class FloodPanel {
       const hand = heightAboveWater(terrain.elev, water, terrain.width, terrain.height);
       const sites = osm.sites.map((x) => ({ ...x, hand: hand[terrain.index(x.lon, x.lat)] }));
       this.scene = { terrain, hand, sites, graph: buildGraph(osm.roads), nodes: new Map(), nisar: Boolean(nisar) };
-      this.el.rain.textContent = rain
-        ? `Rain forecast here, next 7 days: ${rain.total} mm (Open-Meteo). Wettest day: ${rain.days.reduce((a, d) => (d.mm > a.mm ? d : a)).date}.`
-        : '';
+      this.showRain(rain);
       this.el.rise.disabled = false;
       this.el.pick.disabled = false;
       this.el.clear.hidden = false;
@@ -84,6 +85,51 @@ export class FloodPanel {
       this.el.run.disabled = false;
     }
     if (ok) this.render();
+  }
+
+  /** Big view: flooded ground and refuges from the precomputed grid of the area; no roads, so no routes. */
+  async runPrecomputed(view) {
+    const dir = this.dataDir();
+    this.el.run.disabled = true;
+    let ok = false;
+    try {
+      await this.busy('Reading the precomputed flood map...');
+      const [meta, sites] = await Promise.all([
+        this.fetch(`${dir}/flood_hand.json`).then((r) => (r.ok ? r.json() : null)),
+        this.fetch(`${dir}/flood_sites.json`).then((r) => (r.ok ? r.json() : { sites: [] })).catch(() => ({ sites: [] })),
+      ]);
+      if (!meta) {
+        this.say('No precomputed flood map for this area. Zoom in to a town or a stretch of river (about 30 km across or less), then press the button again.');
+        return;
+      }
+      const pixels = await this.map.loadPixels(`${dir}/flood_hand.png`);
+      const terrain = cropGrid(meta, pixels, view);
+      if (!terrain) { this.say('This view is outside the precomputed flood map.'); return; }
+      const [w, s, e, n] = view;
+      const inView = sites.sites.filter((x) => x.lon >= w && x.lon <= e && x.lat >= s && x.lat <= n)
+        .map((x) => ({ ...x, hand: x.hand ?? NaN }));
+      const rain = await rainForecast(this.fetch, (w + e) / 2, (s + n) / 2).catch(() => null);
+      this.origin = null;
+      this.map.setOverlay('flood-route', null);
+      this.scene = { terrain, hand: terrain.hand, sites: inView, graph: null, precomputed: true };
+      this.showRain(rain);
+      this.el.rise.disabled = false;
+      this.el.pick.disabled = true;
+      this.el.clear.hidden = false;
+      ok = true;
+    } catch (err) {
+      this.say(`Could not read the precomputed flood map (${err.message}).`);
+    } finally {
+      this.busy(null);
+      this.el.run.disabled = false;
+    }
+    if (ok) this.render();
+  }
+
+  showRain(rain) {
+    this.el.rain.textContent = rain
+      ? `Rain forecast here, next 7 days: ${rain.total} mm (Open-Meteo). Wettest day: ${rain.days.reduce((a, d) => (d.mm > a.mm ? d : a)).date}.`
+      : '';
   }
 
   async loadNisarWater() {
@@ -162,8 +208,10 @@ export class FloodPanel {
     const share = Math.round((sc.hand.filter((h) => isFlooded(h, rise)).length / sc.hand.length) * 100);
     this.say(`River ${rise.toFixed(1)} m above its usual level: about ${share}% of this view under water (blue). `
       + `${safe} of ${ranked.length} public buildings stay dry with ${SAFE_MARGIN_M} m to spare (green), ${wet} flooded (red). `
-      + `Water seeds: OpenStreetMap rivers${sc.nisar ? ' + water seen by NISAR on the selected date' : ''}.`);
-    if (this.origin) this.plan();
+      + (sc.precomputed
+        ? 'Precomputed for the whole area (~130 m cells, rivers wider than ~30 m). Zoom in to a town (about 30 km across or less) and press the button again for streams, roads and evacuation routes.'
+        : `Water seeds: OpenStreetMap rivers${sc.nisar ? ' + water seen by NISAR on the selected date' : ''}.`));
+    if (this.origin && sc.graph) this.plan();
   }
 
   sitePopup(p) {
@@ -223,6 +271,38 @@ export class FloodPanel {
     this.el.rain.textContent = '';
     this.say('');
   }
+}
+
+/**
+ * Window of the precomputed height grid (decimetres in the red channel, 255 = no data) covering view, every
+ * `step` cells so no side exceeds MAX_GRID. Returns a terrain-like object with hand, or null outside the grid.
+ */
+function cropGrid(meta, pixels, [w, s, e, n]) {
+  const { zoom: z, tx0, ty0, width, height } = meta;
+  const col = (lon) => (lonToX(lon, z) - tx0) * 256;
+  const row = (lat) => (latToY(lat, z) - ty0) * 256;
+  const c0 = Math.max(0, Math.floor(col(w)));
+  const c1 = Math.min(width, Math.ceil(col(e)));
+  const r0 = Math.max(0, Math.floor(row(n)));
+  const r1 = Math.min(height, Math.ceil(row(s)));
+  if (c1 <= c0 || r1 <= r0) return null;
+  const step = Math.max(1, Math.ceil(Math.max(c1 - c0, r1 - r0) / MAX_GRID));
+  const gw = Math.ceil((c1 - c0) / step);
+  const gh = Math.ceil((r1 - r0) / step);
+  const hand = new Float32Array(gw * gh);
+  for (let r = 0; r < gh; r++) {
+    for (let c = 0; c < gw; c++) {
+      const v = pixels.data[((r0 + r * step) * pixels.width + c0 + c * step) * 4];
+      hand[r * gw + c] = v === 255 ? NaN : v / 10;
+    }
+  }
+  const lonLat = (c, r) => [xToLon((tx0 * 256 + c0 + c * step) / 256, z), yToLat((ty0 * 256 + r0 + r * step) / 256, z)];
+  const index = (lon, lat) => {
+    const c = Math.floor((col(lon) - c0) / step);
+    const r = Math.floor((row(lat) - r0) / step);
+    return c >= 0 && c < gw && r >= 0 && r < gh ? r * gw + c : -1;
+  };
+  return { hand, width: gw, height: gh, index, corners: [lonLat(0, 0), lonLat(gw, 0), lonLat(gw, gh), lonLat(0, gh)] };
 }
 
 const ROUTE_LAYERS = [

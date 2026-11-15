@@ -1,0 +1,36 @@
+{
+ "area": "Uruguay",
+ "bbox": [
+  -58.5,
+  -35.0,
+  -53.1,
+  -30.1
+ ],
+ "zoom": 10,
+ "tx0": 345,
+ "ty0": 601,
+ "width": 4096,
+ "height": 4608,
+ "corners": [
+  [
+   -58.710938,
+   -29.840644
+  ],
+  [
+   -53.085938,
+   -29.840644
+  ],
+  [
+   -53.085938,
+   -35.173808
+  ],
+  [
+   -58.710938,
+   -35.173808
+  ]
+ ],
+ "scale_m": 0.1,
+ "nodata": 255,
+ "water": "JRC Global Surface Water occurrence >= 50% and the sea (elevation <= 0)",
+ "terrain": "NASA SRTM via Terrain Tiles (AWS Open Data)"
+}

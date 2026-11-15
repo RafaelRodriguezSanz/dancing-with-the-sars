@@ -17,6 +17,7 @@ export class BootScreen {
     this.el.innerHTML = '<strong></strong><progress max="1" value="0" class="process-bar"></progress><span class="boot-step"></span>';
     this.el.querySelector('strong').textContent = title;
     map.overlayParent().append(this.el);
+    map.quiet = true; // the loading pill would repeat this card
     this.step(0.05, 'Starting...');
   }
 
@@ -36,6 +37,8 @@ export class BootScreen {
     await new Promise((r) => setTimeout(r, Math.max(0, MIN_MS - (Date.now() - this.started))));
     this.active = false;
     this.map.setScanning(null);
+    this.map.quiet = false;
+    this.map.setBusy('boot', null); // shows the pill again if a layer is still loading
     this.el.classList.add('boot-out');
     setTimeout(() => this.el.remove(), 600);
   }

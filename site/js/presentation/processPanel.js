@@ -1,7 +1,7 @@
 /**
  * "Analyze area" row. With the local server (scripts/serve.py) and a token, the button cuts and analyzes the NISAR
  * granules of the selected area; it never starts by itself. Changing area cancels a job still running for another one. While it runs there
- * is a progress bar, `onScan` animates the box on the map, and the button turns into "Cancel".
+ * is a progress bar, `onScan` animates the box on the map, and the button turns into a round cancel cross.
  * Without the server it explains how to get one. Talks to the API only through `api`.
  */
 const POLL_MS = 2000;
@@ -51,6 +51,9 @@ export class ProcessPanel {
     this.row.hidden = ready && !status;
     this.btn.hidden = !status;
     this.btn.disabled = !status?.token;
+    this.btn.classList.remove('stop');
+    this.btn.removeAttribute('aria-label');
+    this.btn.removeAttribute('title');
     this.btn.textContent = ready ? 'Re-analyze area' : 'Analyze area';
     const hint = ready ? ''
       : !status
@@ -85,7 +88,10 @@ export class ProcessPanel {
     this.row.hidden = false;
     this.btn.hidden = false;
     this.btn.disabled = false;
-    this.btn.textContent = 'Cancel';
+    this.btn.classList.add('stop'); // round cross to the right of the progress bar
+    this.btn.textContent = '×';
+    this.btn.setAttribute('aria-label', 'Cancel the analysis');
+    this.btn.title = 'Cancel (dates already downloaded are kept)';
     this.bar.hidden = false;
     const tick = async () => {
       if (!this.running) return;

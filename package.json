@@ -1,0 +1,20 @@
+{
+  "name": "dancing-with-the-sars",
+  "private": true,
+  "description": "Unit tests of the static site (the site itself needs no build or install).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/tests"
+    ],
+    "transform": {}
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

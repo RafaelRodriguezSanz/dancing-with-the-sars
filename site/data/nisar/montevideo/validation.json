@@ -1,0 +1,78 @@
+{
+ "area": "Montevideo",
+ "dates": 30,
+ "ours": "most frequent radar class per pixel over all dates",
+ "land_cover": {
+  "reference": "ESA WorldCover 2021 v200 (10 m, 80 m overview)",
+  "groups": [
+   "water",
+   "woody",
+   "open",
+   "built"
+  ],
+  "matrix_rows_reference_cols_ours": [
+   [
+    207046,
+    294,
+    3338,
+    130
+   ],
+   [
+    5,
+    50870,
+    21894,
+    4502
+   ],
+   [
+    220,
+    23490,
+    133938,
+    7486
+   ],
+   [
+    36,
+    63964,
+    5940,
+    37295
+   ]
+  ],
+  "pixels": 560448,
+  "overall_agreement": 0.766,
+  "kappa": 0.676,
+  "per_group": {
+   "water": {
+    "reference_px": 210808,
+    "ours_px": 207307,
+    "recall": 0.982,
+    "precision": 0.999
+   },
+   "woody": {
+    "reference_px": 77271,
+    "ours_px": 138618,
+    "recall": 0.658,
+    "precision": 0.367
+   },
+   "open": {
+    "reference_px": 165134,
+    "ours_px": 165110,
+    "recall": 0.811,
+    "precision": 0.811
+   },
+   "built": {
+    "reference_px": 107235,
+    "ours_px": 49413,
+    "recall": 0.348,
+    "precision": 0.755
+   }
+  }
+ },
+ "permanent_water": {
+  "reference": "JRC Global Surface Water occurrence >= 50% (1984-2021)",
+  "iou": 0.834,
+  "recall": 0.834,
+  "precision": 0.999,
+  "reference_px": 210127,
+  "ours_px": 175435
+ },
+ "limits": "Reference maps have their own errors and are older (2021); agreement, not accuracy."
+}
