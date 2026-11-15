@@ -4,8 +4,8 @@
  */
 import { compass } from '../domain/wind.js';
 
-// White trails, brighter with speed: every hue on the map already means something (land cover, alerts, towns).
-const SPEED_BINS = [[10, 'rgba(255,255,255,.3)'], [20, 'rgba(255,255,255,.45)'], [30, 'rgba(255,255,255,.6)'], [40, 'rgba(255,255,255,.75)'], [55, 'rgba(255,255,255,.9)'], [Infinity, '#fff']];
+// Yellow trails, brighter with speed: they stand out from the cyan, green and magenta land cover.
+const SPEED_BINS = [[10, 'rgba(255,214,0,.45)'], [20, 'rgba(255,214,0,.6)'], [30, 'rgba(255,220,40,.72)'], [40, 'rgba(255,228,80,.84)'], [55, 'rgba(255,236,120,.94)'], [Infinity, '#fff3a0']];
 const colorOf = (kmh) => SPEED_BINS.findIndex(([max]) => kmh < max);
 const PX_PER_KMH = 0.12; // trail speed on screen, per frame, when the whole field box fills the view
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -66,8 +66,8 @@ export class WindFlow {
     const fit = this.map.cameraForBounds(this.field.bbox)?.zoom ?? this.map.getZoom();
     const zoom = 2 ** (this.map.getZoom() - fit);
     this.step = PX_PER_KMH * clamp(zoom, 0.3, 6);
-    this.width = 1.4 * clamp(Math.sqrt(zoom), 0.7, 3);
-    const n = this.rect ? Math.min(800, Math.round(((this.rect[2] - this.rect[0]) * (this.rect[3] - this.rect[1])) / 1100)) : 0;
+    this.width = 1.6 * clamp(Math.sqrt(zoom), 0.7, 3);
+    const n = this.rect ? Math.min(500, Math.round(((this.rect[2] - this.rect[0]) * (this.rect[3] - this.rect[1])) / 2500)) : 0;
     this.particles = Array.from({ length: n }, () => this.spawn({}, true));
     this.clear();
     this.moving = false;
