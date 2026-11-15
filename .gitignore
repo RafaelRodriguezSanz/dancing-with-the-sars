@@ -10,3 +10,6 @@ data/raw/
 *.tif
 *.SAFE/
 node_modules/
+
+# Processed NISAR products: built locally with scripts/nisar_*.py (Earthdata token needed), not versioned
+site/data/nisar/
