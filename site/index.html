@@ -45,11 +45,40 @@
         <button id="reset" type="button">Go to area</button>
       </div>
       <div id="area-info" class="info"></div>
+      <div id="process-row" class="row" hidden>
+        <button id="process" class="primary" type="button" hidden>Analyze area</button>
+        <progress id="process-bar" class="process-bar" max="1" value="0" hidden></progress>
+        <div id="process-info" class="info"></div>
+      </div>
     </details>
-    <details class="tools">
-      <summary>About the data</summary>
-      <p class="caveat">Calibrated layer: real NISAR GCOV backscatter cut from NASA Earthdata for the Santa Lucía box (red = HH, green = HV, blue = HH&minus;HV, fixed dB scale). GIBS layer: false-colour tiles for any area, not calibrated. Alerts are candidates from simple rules, not confirmed events. The arrows skip dates without tiles or whose pass covers less than 95% of the box (still listed in the menu).</p>
-      <p class="credits">Built with AI assistance (Claude Code). Data: NISAR GCOV (NASA-ISRO) via NASA Earthdata / ASF DAAC, NASA CMR, NASA GIBS (incl. Blue Marble). Basemap &copy; OpenStreetMap contributors.</p>
+    <details id="validation" class="tools" hidden>
+      <summary>How good is it?</summary>
+      <div id="validation-body"></div>
+    </details>
+    <details id="flood" class="tools">
+      <summary>El Niño flood response</summary>
+      <p class="hint">El Niño years bring heavy rain to Uruguay and rivers such as the Uruguay, Negro, Yí, Cuareim and Olimar overflow. Zoom in to a riverside town, then see which ground a river rise would cover, which public buildings stay dry as refuges and a road route that avoids flooded streets.</p>
+      <div class="row">
+        <button id="flood-run" class="primary" type="button">Analyze flood risk in this view</button>
+      </div>
+      <div class="row">
+        <label for="flood-rise">River rise</label>
+        <input id="flood-rise" type="range" min="0" max="10" step="0.5" value="3" disabled>
+        <output id="flood-rise-value" for="flood-rise">3.0 m</output>
+      </div>
+      <div class="row">
+        <button id="flood-pick" type="button" disabled>Plan evacuation from a point</button>
+        <button id="flood-clear" type="button" hidden>Clear</button>
+      </div>
+      <div id="flood-info" class="info" role="status"></div>
+      <div id="flood-rain" class="info"></div>
+      <p class="caveat">Planning aid, not an official plan: in an emergency follow SINAE and the departmental Cecoed. Simple model: water level spreads from rivers over terrain (NASA SRTM, ~30 m); it ignores levees, drains and one-way streets. Refuges are public buildings from OpenStreetMap, not confirmed shelters.</p>
+    </details>
+    <details id="about" class="tools">
+      <summary>About</summary>
+      <p class="caveat">NISAR radar layers are products derived from real NISAR GCOV backscatter (HH, HV in dB) cut from NASA Earthdata: precomputed for Uruguay and processed on demand for any other area by the local server, scripts/serve.py. Alerts are candidates from simple rules, not confirmed events. The arrows skip dates without tiles or whose pass covers less than 95% of the box (still listed in the menu).</p>
+      <p class="credits">Made by Rafael Rodriguez Sanz, Montevideo, Uruguay, for the NASA Space Apps Challenge 2026, with AI assistance (Claude Code). Data: NISAR GCOV (NASA-ISRO) via NASA Earthdata / ASF DAAC, NASA CMR, NASA GIBS, NASA SRTM, Open-Meteo. Basemap, towns, roads and buildings &copy; OpenStreetMap contributors (ODbL).</p>
+      <div class="row"><button id="readme-open" type="button">Read the README</button></div>
     </details>
   </header>
 
@@ -63,7 +92,12 @@
     <div class="evo-body"></div>
   </section>
 
-  <div id="loading" class="glass loading" role="status" hidden><i class="spinner" aria-hidden="true"></i><span>Loading...</span></div>
+  <dialog id="readme" class="glass readme" aria-label="README">
+    <div class="readme-head"><strong>README</strong><button id="readme-close" class="icon" type="button" aria-label="Close">&times;</button></div>
+    <article id="readme-body" class="readme-body">Loading...</article>
+  </dialog>
+
+  <div id="loading"class="glass loading" role="status" hidden><i class="spinner" aria-hidden="true"></i><span>Loading...</span></div>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.12.0/maplibre-gl.min.js"></script>
 <script type="module" src="js/main.js"></script>

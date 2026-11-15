@@ -1,21 +1,29 @@
 import { defineLayer } from '../domain/layer.js';
-import { SANTA_LUCIA } from '../domain/scene.js';
+import { SANTA_LUCIA, URUGUAY } from '../domain/scene.js';
 
-/** Real NISAR GCOV values, cut offline from the Earthdata granules by scripts/nisar_subset.py. */
-export const CALIBRATED_DIR = 'data/nisar/santa-lucia';
+/** Real NISAR GCOV values, cut from the Earthdata granules by scripts/nisar_subset.py (or on demand by
+ * scripts/serve.py). One folder per area; DATA.dir follows the selected area (setCalibratedArea). */
+const NAMED = [['santa-lucia', SANTA_LUCIA.bbox], ['uruguay', URUGUAY.bbox]];
+/** Folder of a box; must match area_slug() in scripts/nisar_subset.py. */
+export function areaDir(bbox) {
+  const named = NAMED.find(([, b]) => b.every((v, i) => Math.abs(v - bbox[i]) < 5e-5));
+  return `data/nisar/${named ? named[0] : `aoi_${bbox.map((v) => v.toFixed(4)).join('_')}`}`;
+}
+export const DATA = { dir: areaDir(SANTA_LUCIA.bbox) };
+export function setCalibratedArea(bbox) { DATA.dir = areaDir(bbox); HIRES_DATES.clear(); }
 /** Dates with high-resolution tiles (frequency A); filled at start-up from tiles/index.json. */
 export const HIRES_DATES = new Set();
 export const HIRES_MIN_ZOOM = 10; // map zoom (MapLibre); closer than this, the 80 m picture is too coarse
 /** Display options. steady: use <date>_steady.webp, where each orbit pass is brought to the median of all
  * passes, so dates seen from different angles do not flicker (scripts/nisar_subset.py, steady_view). */
 export const VIEW = { steady: true };
-export const imageUrl = (date) => `${CALIBRATED_DIR}/${date}${VIEW.steady ? '_steady' : ''}.webp`;
+export const imageUrl = (date) => `${DATA.dir}/${date}${VIEW.steady ? '_steady' : ''}.webp`;
 
 export default defineLayer({
   id: 'nisar-calibrated',
-  title: 'NISAR radar, calibrated (Santa Lucía)',
+  title: 'NISAR radar, calibrated',
   description: 'Real NISAR L-band backscatter cut from the NASA Earthdata granules: red = HH, green = HV (vegetation volume), blue = HH minus HV. Fixed dB scale, so dates are comparable.',
-  caveat: 'Pre-processed for the Santa Lucía box only; 80 m from afar, 16 m when zoomed in where available. Steady colours apply to the 80 m picture; the 16 m tiles show the raw pass.',
+  caveat: 'Ready for Santa Lucía; any other area must be analyzed first (Analyze area, local server with an Earthdata token). 80 m from afar, 16 m when zoomed in where available. Steady colours apply to the 80 m picture; the 16 m tiles show the raw pass.',
   usesDate: true,
   region: { name: 'Santa Lucía, Uruguay', bbox: SANTA_LUCIA.bbox },
   legend: [
@@ -26,11 +34,11 @@ export default defineLayer({
   tiers: [{
     id: 'gcov-b', label: 'NISAR GCOV 80 m', kind: 'image',
     url: imageUrl,
-    bbox: [-56.75, -34.75, -56.05, -34.15],
+    bbox: 'area', // each area is processed for exactly its own box
     attribution: 'NISAR GCOV (NASA-ISRO), NASA Earthdata / ASF DAAC',
   }, {
     id: 'gcov-a', label: 'NISAR GCOV 16 m', kind: 'tiles', minZoom: HIRES_MIN_ZOOM,
-    url: (date) => `${CALIBRATED_DIR}/tiles/${date}/rgb/{z}/{x}/{y}.webp`,
+    url: (date) => `${DATA.dir}/tiles/${date}/rgb/{z}/{x}/{y}.webp`,
     available: (date) => HIRES_DATES.has(date), minNativeZoom: 10, maxNativeZoom: 13,
     attribution: 'NISAR GCOV (NASA-ISRO), NASA Earthdata / ASF DAAC',
   }],

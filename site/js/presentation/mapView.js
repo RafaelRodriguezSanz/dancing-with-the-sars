@@ -126,7 +126,7 @@ export class MapView {
     const { layer } = slot;
     const sid = `${group.id}::${tier.id}`;
     const part = { sid, lid: sid, tier, minzoom, maxzoom };
-    const [w, s, e, n] = tier.bbox ?? this.bbox;
+    const [w, s, e, n] = Array.isArray(tier.bbox) ? tier.bbox : this.bbox; // 'area': the selected area
     const corners = [[w, n], [e, n], [e, s], [w, s]];
     if (tier.kind === 'image') {
       this.map.addSource(sid, { type: 'image', url: abs(tier.url(date)), coordinates: corners });
@@ -293,13 +293,16 @@ export class MapView {
     const id = layer.id;
     this.setBusy(id, layer.title);
     let fc = null;
-    try { fc = await fetch(tier.url(date)).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))); } catch { fc = null; }
+    try {
+      fc = tier.load ? await tier.load(date, this.bbox) // several sources merged by the layer
+        : await fetch(tier.url(date)).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
+    } catch { fc = null; }
     this.setBusy(id, null);
     if (!fc || this.slots.get(id) !== slot) return;
     const color = ['match', ['get', 'kind'], ...layer.classes.flatMap((c) => [c.kind, `rgb(${c.color.join(',')})`]), '#fff'];
     if (this.map.getSource(id)) { this.map.getSource(id).setData(fc); return; }
     this.map.addSource(id, { type: 'geojson', data: fc, attribution: tier.attribution });
-    this.map.addLayer({ id: `${id}-fill`, type: 'fill', source: id, filter: this.kindFilter(layer), paint: { 'fill-color': color, 'fill-opacity': 0.28 } });
+    this.map.addLayer({ id: `${id}-fill`, type: 'fill', source: id, filter: this.kindFilter(layer), paint: { 'fill-color': color, 'fill-opacity': ['match', ['get', 'kind'], ...layer.classes.flatMap((c) => [c.kind, c.fill ?? 0.28]), 0.28] } });
     this.map.addLayer({ id: `${id}-line`, type: 'line', source: id, filter: this.kindFilter(layer), paint: { 'line-color': color, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.2, 14, 3], 'line-blur': 0.4 } });
     slot.vector = [`${id}-fill`, `${id}-line`];
     const byKind = new Map(layer.classes.map((c) => [c.kind, c]));
@@ -322,7 +325,10 @@ export class MapView {
     head.querySelector('b').textContent = kind.label;
     const line = (text, cls) => { const d = document.createElement('div'); d.className = cls; d.textContent = text; return d; };
     const why = p.why ?? kind.rule;
-    div.append(head, line(p.date ? `${p.date} · ${p.area_ha} ha` : `${p.area_ha} ha`, 'pop-meta'), line(why, ''), line(db.join(' · '), 'pop-db'), line(kind.caveat, 'pop-caveat'));
+    div.append(head, line(p.date ? `${p.date} · ${p.area_ha} ha` : `${p.area_ha} ha`, 'pop-meta'), line(why, ''));
+    if (p.rain) div.append(line(p.rain, ''));
+    if (db.length) div.append(line(db.join(' · '), 'pop-db'));
+    div.append(line(kind.caveat, 'pop-caveat'));
     if (p.date) { // alerts belong to a date; built-up areas hold for all of them
       const go = document.createElement('button');
       go.textContent = `Show ${p.date}`;
@@ -330,6 +336,54 @@ export class MapView {
       div.append(go);
     }
     return div;
+  }
+
+  // --- flood response overlays (FloodPanel) ---
+
+  /**
+   * Own overlay on top of everything: {image: {url, corners}} or {geojson, layers: [{type, paint, layout?, filter?}]};
+   * null removes it. Re-setting the same id swaps the data in place.
+   */
+  async setOverlay(id, spec) {
+    await this.ready;
+    const ids = this.overlays?.get(id) ?? [];
+    this.overlays ??= new Map();
+    if (!spec) {
+      ids.forEach((l) => this.map.getLayer(l) && this.map.removeLayer(l));
+      if (this.map.getSource(id)) this.map.removeSource(id);
+      this.overlays.delete(id);
+      return;
+    }
+    const src = this.map.getSource(id);
+    if (src && spec.image) { src.updateImage({ url: spec.image.url, coordinates: spec.image.corners }); return; }
+    if (src && spec.geojson) { src.setData(spec.geojson); return; }
+    if (spec.image) {
+      this.map.addSource(id, { type: 'image', url: spec.image.url, coordinates: spec.image.corners });
+      this.map.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': 0.85, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } });
+      this.overlays.set(id, [id]);
+      return;
+    }
+    this.map.addSource(id, { type: 'geojson', data: spec.geojson, attribution: spec.attribution });
+    const lids = spec.layers.map((l, i) => { const lid = `${id}-${i}`; this.map.addLayer({ id: lid, source: id, ...l }); return lid; });
+    this.overlays.set(id, lids);
+    if (spec.popup) {
+      lids.forEach((lid) => {
+        this.map.on('mouseenter', lid, () => { this.map.getCanvas().style.cursor = 'pointer'; });
+        this.map.on('mouseleave', lid, () => { this.map.getCanvas().style.cursor = ''; });
+        this.map.on('click', lid, (ev) => {
+          this.popup?.remove();
+          this.popup = new maplibregl.Popup({ maxWidth: '280px', className: 'alert-popup' })
+            .setLngLat(ev.lngLat).setDOMContent(spec.popup(ev.features[0].properties)).addTo(this.map);
+        });
+      });
+    }
+  }
+
+  /** Resolves with the [lon, lat] of the next click on the map (crosshair cursor meanwhile). */
+  pickPoint() {
+    const canvas = this.map.getCanvas();
+    canvas.style.cursor = 'crosshair';
+    return new Promise((resolve) => this.map.once('click', (ev) => { canvas.style.cursor = ''; resolve([ev.lngLat.lng, ev.lngLat.lat]); }));
   }
 
   // --- drawing an area (used by AreaSelector, which stays library-free) ---
@@ -341,6 +395,32 @@ export class MapView {
     const r = this.map.getContainer().getBoundingClientRect();
     const p = this.map.unproject([clientX - r.left, clientY - r.top]);
     return [p.lng, p.lat];
+  }
+
+  /** Radar-scan animation over bbox while it is being processed; null removes it. Follows the map as it moves. */
+  setScanning(bbox, progress = 0) {
+    if (!bbox) {
+      if (this.scan) { this.map.off('move', this.scan.place); this.scan.el.remove(); this.scan = null; }
+      return;
+    }
+    if (!this.scan) {
+      const el = document.createElement('div');
+      el.className = 'radar-scan';
+      el.innerHTML = '<div class="radar-sweep"></div><div class="radar-track"></div><span class="radar-label"></span>';
+      this.map.getContainer().append(el);
+      const place = () => {
+        const [w, s, e, n] = this.scan.bbox;
+        const a = this.map.project([w, n]);
+        const b = this.map.project([e, s]);
+        Object.assign(el.style, { left: `${Math.min(a.x, b.x)}px`, top: `${Math.min(a.y, b.y)}px`,
+          width: `${Math.abs(b.x - a.x)}px`, height: `${Math.abs(b.y - a.y)}px` });
+      };
+      this.scan = { el, place, bbox };
+      this.map.on('move', place);
+    }
+    this.scan.bbox = bbox;
+    this.scan.place();
+    this.scan.el.querySelector('.radar-label').textContent = `Scanning with NISAR · ${Math.round(progress * 100)}%`;
   }
 
   setBusy(id, text) {

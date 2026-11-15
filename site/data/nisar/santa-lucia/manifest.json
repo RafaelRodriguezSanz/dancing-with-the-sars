@@ -1,0 +1,710 @@
+{
+ "scenes": {
+  "2026-06-19": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_023_082_D_106_2005_DHDH_M_20260619T215212_20260619T215247_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_023_082_D_106_4005_DHDH_A_20260619T215217_20260619T215227_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.38,
+   "hv_median_db": -18.3,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0098,
+    "woody": 0.1125,
+    "double-bounce": 0.002,
+    "herbaceous": 0.844,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-06-24": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_023_154_D_106_4005_DHDH_A_20260624T214353_20260624T214431_P05023_N_F_J_001"
+   ],
+   "valid": 0.699,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.19,
+   "hv_median_db": -18.92,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0476,
+    "woody": 0.0881,
+    "double-bounce": 0.0028,
+    "herbaceous": 0.8402,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-07-01": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_024_082_D_105_2005_DHDH_M_20260701T215138_20260701T215212_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_024_082_D_106_2005_DHDH_M_20260701T215211_20260701T215246_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_024_082_D_106_4005_DHDH_A_20260701T215216_20260701T215226_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -12.57,
+   "hv_median_db": -19.27,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0433,
+    "woody": 0.0924,
+    "double-bounce": 0.0015,
+    "herbaceous": 0.831,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-07-06": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_024_154_D_106_4005_DHDH_A_20260706T214352_20260706T214430_P05023_N_F_J_001"
+   ],
+   "valid": 0.7,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.55,
+   "hv_median_db": -18.47,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0242,
+    "woody": 0.0959,
+    "double-bounce": 0.004,
+    "herbaceous": 0.8546,
+    "permanent-water": 0.0086,
+    "built-up": 0.0128
+   }
+  },
+  "2026-07-12": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_025_060_A_160_4005_DHDH_A_20260712T094543_20260712T094621_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -1.35,
+   "hv_median_db": -12.41,
+   "pass": "09:40 UTC",
+   "suspect": true,
+   "class_share": {
+    "water": 0.0052,
+    "woody": 0.6081,
+    "double-bounce": 0.0945,
+    "herbaceous": 0.2606,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-07-13": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_025_082_D_106_2005_DHDH_M_20260713T215211_20260713T215246_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_025_082_D_106_4005_DHDH_A_20260713T215215_20260713T215225_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.69,
+   "hv_median_db": -18.66,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0119,
+    "woody": 0.1027,
+    "double-bounce": 0.0018,
+    "herbaceous": 0.8519,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-07-18": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_025_154_D_106_4005_DHDH_A_20260718T214351_20260718T214430_P05023_N_F_J_001"
+   ],
+   "valid": 0.699,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.54,
+   "hv_median_db": -18.61,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0163,
+    "woody": 0.093,
+    "double-bounce": 0.005,
+    "herbaceous": 0.8643,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-07-24": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_026_060_A_160_4005_DHDH_A_20260724T094542_20260724T094620_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_026_060_A_161_2005_DHDH_M_20260724T094616_20260724T094651_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.87,
+   "hv_median_db": -18.05,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0062,
+    "woody": 0.1142,
+    "double-bounce": 0.0066,
+    "herbaceous": 0.8413,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-07-25": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_026_082_D_105_2005_DHDH_M_20260725T215136_20260725T215211_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_026_082_D_106_2005_DHDH_M_20260725T215210_20260725T215245_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_026_082_D_106_4005_DHDH_A_20260725T215215_20260725T215225_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.97,
+   "hv_median_db": -18.05,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0048,
+    "woody": 0.1191,
+    "double-bounce": 0.0027,
+    "herbaceous": 0.8416,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-08-11": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_027_154_D_106_4005_DHDH_A_20260811T214350_20260811T214429_P05023_N_F_J_001"
+   ],
+   "valid": 0.696,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.52,
+   "hv_median_db": -17.64,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0075,
+    "woody": 0.1375,
+    "double-bounce": 0.0062,
+    "herbaceous": 0.8277,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-08-17": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_028_060_A_160_4005_DHDH_A_20260817T094541_20260817T094619_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -8.99,
+   "hv_median_db": -17.16,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0017,
+    "woody": 0.1419,
+    "double-bounce": 0.0075,
+    "herbaceous": 0.8172,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-08-18": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_028_082_D_106_2005_DHDH_M_20260818T215209_20260818T215244_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_028_082_D_106_4005_DHDH_A_20260818T215214_20260818T215224_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.53,
+   "hv_median_db": -16.69,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0003,
+    "woody": 0.1761,
+    "double-bounce": 0.0037,
+    "herbaceous": 0.7882,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-08-23": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_028_154_D_106_4005_DHDH_A_20260823T214349_20260823T214424_P05023_N_F_J_001"
+   ],
+   "valid": 0.699,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.5,
+   "hv_median_db": -17.59,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0082,
+    "woody": 0.1266,
+    "double-bounce": 0.0063,
+    "herbaceous": 0.8375,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-08-29": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_029_060_A_160_4005_DHDH_A_20260829T094541_20260829T094619_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.79,
+   "hv_median_db": -17.98,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0037,
+    "woody": 0.1059,
+    "double-bounce": 0.006,
+    "herbaceous": 0.8528,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-08-30": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_029_082_D_106_2005_DHDH_M_20260830T215209_20260830T215244_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_029_082_D_106_4005_DHDH_A_20260830T215214_20260830T215224_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.84,
+   "hv_median_db": -17.97,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0031,
+    "woody": 0.1282,
+    "double-bounce": 0.0023,
+    "herbaceous": 0.8346,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-09-04": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_029_154_D_106_4005_DHDH_A_20260904T214349_20260904T214428_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_029_154_D_106_4005_DHDH_A_20260904T214349_20260904T214428_P05023_N_F_J_002"
+   ],
+   "valid": 0.698,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.74,
+   "hv_median_db": -17.89,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0098,
+    "woody": 0.1172,
+    "double-bounce": 0.0067,
+    "herbaceous": 0.8451,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-09-10": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_030_060_A_160_4005_DHDH_A_20260910T094541_20260910T094619_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.66,
+   "hv_median_db": -17.97,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0029,
+    "woody": 0.1072,
+    "double-bounce": 0.0064,
+    "herbaceous": 0.8518,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-09-11": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_030_082_D_106_2005_DHDH_M_20260911T215209_20260911T215243_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_030_082_D_106_4005_DHDH_A_20260911T215214_20260911T215224_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.13,
+   "hv_median_db": -18.14,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0033,
+    "woody": 0.12,
+    "double-bounce": 0.0023,
+    "herbaceous": 0.8427,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-09-16": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_030_154_D_106_4005_DHDH_A_20260916T214349_20260916T214428_P05023_N_F_J_001"
+   ],
+   "valid": 0.698,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.62,
+   "hv_median_db": -18.45,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0228,
+    "woody": 0.1021,
+    "double-bounce": 0.0047,
+    "herbaceous": 0.8491,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-09-22": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_031_060_A_160_4005_DHDH_A_20260922T094541_20260922T094619_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.55,
+   "hv_median_db": -18.75,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0087,
+    "woody": 0.0896,
+    "double-bounce": 0.0059,
+    "herbaceous": 0.8641,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-09-23": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_031_082_D_106_2005_DHDH_M_20260923T215209_20260923T215243_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_031_082_D_106_4005_DHDH_A_20260923T215214_20260923T215228_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.27,
+   "hv_median_db": -18.17,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0027,
+    "woody": 0.1219,
+    "double-bounce": 0.0024,
+    "herbaceous": 0.8414,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-09-28": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_031_154_D_106_4005_DHDH_A_20260928T214349_20260928T214424_P05023_N_F_J_001"
+   ],
+   "valid": 0.698,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.0,
+   "hv_median_db": -18.78,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.029,
+    "woody": 0.0935,
+    "double-bounce": 0.0043,
+    "herbaceous": 0.8519,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-10-04": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_032_060_A_160_4005_DHDH_A_20261004T094541_20261004T094619_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.04,
+   "hv_median_db": -17.14,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0006,
+    "woody": 0.1327,
+    "double-bounce": 0.0087,
+    "herbaceous": 0.8263,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-10-05": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_032_082_D_106_2005_DHDH_M_20261005T215209_20261005T215243_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_032_082_D_106_4005_DHDH_A_20261005T215214_20261005T215224_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.95,
+   "hv_median_db": -17.92,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0017,
+    "woody": 0.1274,
+    "double-bounce": 0.0028,
+    "herbaceous": 0.8364,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-10-10": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_032_154_D_106_4005_DHDH_A_20261010T214349_20261010T214424_P05023_N_F_J_001"
+   ],
+   "valid": 0.697,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -9.6,
+   "hv_median_db": -16.59,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0017,
+    "woody": 0.1646,
+    "double-bounce": 0.0029,
+    "herbaceous": 0.8096,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-10-16": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_033_060_A_160_4005_DHDH_A_20261016T094541_20261016T094619_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_033_060_A_161_2005_DHDH_M_20261016T094615_20261016T094650_P05023_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.02,
+   "hv_median_db": -17.94,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.004,
+    "woody": 0.1045,
+    "double-bounce": 0.0056,
+    "herbaceous": 0.8542,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-10-17": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_033_082_D_105_2005_DHDH_M_20261017T215135_20261017T215210_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_033_082_D_106_2005_DHDH_M_20261017T215209_20261017T215244_P05023_N_F_J_001",
+    "NISAR_L2_PR_GCOV_033_082_D_106_4005_DHDH_A_20261017T215214_20261017T215224_P05023_N_P_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.74,
+   "hv_median_db": -17.42,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0006,
+    "woody": 0.1339,
+    "double-bounce": 0.002,
+    "herbaceous": 0.8318,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-10-22": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_033_154_D_106_4005_DHDH_A_20261022T214349_20261022T214424_P05036_N_F_J_001"
+   ],
+   "valid": 0.698,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.37,
+   "hv_median_db": -17.7,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0105,
+    "woody": 0.1275,
+    "double-bounce": 0.0023,
+    "herbaceous": 0.8385,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  },
+  "2026-10-28": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_034_060_A_160_4005_DHDH_A_20261028T094541_20261028T094620_P05036_N_F_J_001",
+    "NISAR_L2_PR_GCOV_034_060_A_161_2005_DHDH_M_20261028T094615_20261028T094650_P05036_N_F_J_001"
+   ],
+   "valid": 1.0,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.26,
+   "hv_median_db": -18.55,
+   "pass": "09:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0135,
+    "woody": 0.0903,
+    "double-bounce": 0.004,
+    "herbaceous": 0.8606,
+    "permanent-water": 0.0202,
+    "built-up": 0.0115
+   }
+  },
+  "2026-10-29": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_034_082_D_105_2005_DHDH_A_20261029T215135_20261029T215212_P05036_N_F_J_001",
+    "NISAR_L2_PR_GCOV_034_082_D_106_4005_DHDH_A_20261029T215215_20261029T215244_P05036_N_F_J_001"
+   ],
+   "valid": 0.798,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -11.13,
+   "hv_median_db": -18.05,
+   "pass": "21:50 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0057,
+    "woody": 0.1099,
+    "double-bounce": 0.002,
+    "herbaceous": 0.8458,
+    "permanent-water": 0.0244,
+    "built-up": 0.0123
+   }
+  },
+  "2026-11-03": {
+   "granules": [
+    "NISAR_L2_PR_GCOV_034_154_D_106_4005_DHDH_A_20261103T214350_20261103T214424_P05036_N_F_J_001"
+   ],
+   "valid": 0.698,
+   "epsg": 32721,
+   "spacing_m": 80.0,
+   "hh_median_db": -10.1,
+   "hv_median_db": -16.81,
+   "pass": "21:40 UTC",
+   "suspect": false,
+   "class_share": {
+    "water": 0.0033,
+    "woody": 0.1682,
+    "double-bounce": 0.0043,
+    "herbaceous": 0.8029,
+    "permanent-water": 0.0085,
+    "built-up": 0.0127
+   }
+  }
+ },
+ "area": "Santa Lucía basin",
+ "bbox": [
+  -56.75,
+  -34.75,
+  -56.05,
+  -34.15
+ ],
+ "frequency": "B",
+ "stretch": {
+  "HH": [
+   -25.0,
+   0.0
+  ],
+  "HV": [
+   -32.0,
+   -8.0
+  ],
+  "RATIO": [
+   0.0,
+   15.0
+  ]
+ },
+ "composite": "R=HH, G=HV, B=HH-HV (dB, gamma0 RTC)",
+ "source": "NASA/ISRO NISAR L2 GCOV (NISAR_L2_GCOV_V1, NISAR_L2_GCOV_PROVISIONAL_V1) via NASA Earthdata (ASF DAAC)",
+ "classes": [
+  {
+   "value": 1,
+   "key": "water",
+   "rule": "Water on this date only: very low HH and HV, but not on most dates (flooding, or smooth bare soil)"
+  },
+  {
+   "value": 2,
+   "key": "woody",
+   "rule": "Woody vegetation: high HV (volume scattering in branches)"
+  },
+  {
+   "value": 3,
+   "key": "double-bounce",
+   "rule": "Built-up or flooded vegetation: very high HH, much higher than HV (double bounce)"
+  },
+  {
+   "value": 4,
+   "key": "herbaceous",
+   "rule": "Grassland and crops: everything else with data"
+  },
+  {
+   "value": 5,
+   "key": "permanent-water",
+   "rule": "Permanent water: the water rule holds on the median of all dates (rivers, lakes, reservoirs)"
+  },
+  {
+   "value": 6,
+   "key": "built-up",
+   "rule": "Built-up: very bright HH, far above HV, on the median of all dates (towns, sheds); shown as its own layer"
+  }
+ ],
+ "permanent_water": {
+  "dates": 30,
+  "min_obs": 5,
+  "share": 0.0202
+ },
+ "built_up": {
+  "median_hh_above_db": -4.0,
+  "median_hh_minus_hv_above_db": 7.0,
+  "min_pixels": 4,
+  "share": 0.0115
+ },
+ "steady": "per-pixel median of each orbit pass replaced by the median of all dates"
+}

@@ -12,8 +12,9 @@ The cut dB values are cached in data/raw/nisar/<area>/<date>.npz (gitignored), s
 products can be derived later without downloading again. Products of every cached date are
 always rebuilt (about 1 s each), because permanent water changes when a new date arrives.
 
-Usage: .venv/Scripts/python scripts/nisar_subset.py [--area santa-lucia] [--freq B] [--limit N] [--offline]
-Needs ~/.earthdata_token (see nisar_access.py). The token is never written to output.
+Usage: .venv/Scripts/python scripts/nisar_subset.py [--area santa-lucia | --bbox w,s,e,n] [--freq B] [--limit N] [--offline]
+Any box on Earth works with --bbox; its folder is area_slug(bbox), the same name the site computes.
+Needs an Earthdata token (.env, see .env.example and nisar_access.py). The token is never written to output.
 """
 import argparse
 import json
@@ -21,6 +22,7 @@ import os
 import sys
 import time
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import fsspec
 import h5py
@@ -33,7 +35,34 @@ sys.path.insert(0, os.path.dirname(__file__))
 from nisar_access import find_granules, signed_url  # noqa: E402
 from outline import outline  # noqa: E402
 
-AREAS = {'santa-lucia': ('Santa Lucía basin', [-56.75, -34.75, -56.05, -34.15])}
+AREAS = {'santa-lucia': ('Santa Lucía basin', [-56.75, -34.75, -56.05, -34.15]),
+         'uruguay': ('Uruguay', [-58.5, -35.0, -53.1, -30.1])}
+# Per-area overrides. Uruguay: 200 m pixels (a country, not a basin); one pass covers only a strip of it, so a date
+# counts from 1% coverage, and the date-median outlier test is off (each strip sees different land and sea).
+AREA_OPTS = {'uruguay': {'out_px': 2700, 'min_valid': 0.01, 'suspect_db': 99, 'mosaic': True}}
+MOSAIC = 'latest'  # products key of the mosaic: newest valid pixel of all dates (a country needs many passes)
+WORKERS = int(os.environ.get('NISAR_WORKERS', 4))  # dates downloaded in parallel (separate processes: h5py serialises threads)
+
+
+def area_slug(bbox):
+    """Folder name of a box; must match areaDir() in site/js/layers/nisarCalibrated.js."""
+    for key, (_, b) in AREAS.items():
+        if [round(v, 4) for v in b] == [round(v, 4) for v in bbox]:
+            return key
+    return 'aoi_' + '_'.join(f'{v:.4f}' for v in bbox)
+
+
+def resolve_area(area, bbox_arg):
+    """(slug, name, bbox) from --area or --bbox 'w,s,e,n'."""
+    if not bbox_arg:
+        return (area, *AREAS[area])
+    bbox = [round(float(v), 4) for v in bbox_arg.split(',')]
+    w, s, e, n = bbox
+    if not (-180 <= w < e <= 180 and -90 <= s < n <= 90):
+        raise SystemExit(f'bad --bbox {bbox_arg}: expected w,s,e,n')
+    return area_slug(bbox), f'Box {w}, {s} to {e}, {n}', bbox
+
+
 SHORT_NAMES = ['NISAR_L2_GCOV_V1', 'NISAR_L2_GCOV_PROVISIONAL_V1']
 # Fixed dB stretch so every date uses the same colors and changes are comparable.
 STRETCH = {'HH': (-25.0, 0.0), 'HV': (-32.0, -8.0), 'RATIO': (0.0, 15.0)}
@@ -206,6 +235,19 @@ def build_products(hh, hv, outdir, date, perm=None, built=None):
     return {key: round(float((cls == v).sum()) / valid, 4) for v, key, _, _ in CLASSES}
 
 
+def download_to_cache(grans, bbox, freq, date, cache, out_px):
+    """Worker process: one date -> <date>.npz. Returns a log line."""
+    global OUT_PX
+    OUT_PX = out_px
+    t = time.time()
+    hh, hv, used, info = download(grans, bbox, freq, date)
+    if hh is None:
+        return f'{date} no data'
+    np.savez_compressed(cache, hh=hh.astype(np.float16), hv=hv.astype(np.float16), granules=np.array(used),
+                        epsg=info.get('epsg', 0), spacing_m=info.get('spacing_m', 0))
+    return f'{date} downloaded {time.time() - t:.0f}s'
+
+
 def download(grans, bbox, freq, date):
     hh = hv = None
     used, info = [], {}
@@ -229,13 +271,17 @@ def download(grans, bbox, freq, date):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--area', default='santa-lucia', choices=AREAS)
+    ap.add_argument('--bbox', help='any box instead of --area: w,s,e,n in degrees')
     ap.add_argument('--freq', default='B', choices='AB')
     ap.add_argument('--offline', action='store_true', help='do not search or download, only rebuild from the cache')
     ap.add_argument('--limit', type=int, default=0, help='only the newest N dates (0 = all)')
     a = ap.parse_args()
-    name, bbox = AREAS[a.area]
-    outdir = os.path.join(ROOT, 'site', 'data', 'nisar', a.area)
-    cachedir = os.path.join(ROOT, 'data', 'raw', 'nisar', a.area)
+    slug, name, bbox = resolve_area(a.area, a.bbox)
+    global OUT_PX
+    opts = AREA_OPTS.get(slug, {})
+    OUT_PX = opts.get('out_px', OUT_PX)
+    outdir = os.path.join(ROOT, 'site', 'data', 'nisar', slug)
+    cachedir = os.path.join(ROOT, 'data', 'raw', 'nisar', slug)
     os.makedirs(outdir, exist_ok=True)
     os.makedirs(cachedir, exist_ok=True)
     mpath = os.path.join(outdir, 'manifest.json')
@@ -246,26 +292,21 @@ def main():
             for gr in find_granules(short, bbox):
                 by_date.setdefault(gr['start'][:10], []).append({**gr, 'collection': short})
     dates = sorted(by_date, reverse=True)  # newest first
-    for date in dates[:a.limit] if a.limit else dates:  # 1) download what is not cached yet
-        cache = os.path.join(cachedir, f'{date}.npz')
-        if os.path.exists(cache):
-            continue
-        t = time.time()
-        hh, hv, used, info = download(by_date[date], bbox, a.freq, date)
-        if hh is None:
-            print(date, 'no data'); continue
-        np.savez_compressed(cache, hh=hh.astype(np.float16), hv=hv.astype(np.float16), granules=np.array(used),
-                            epsg=info.get('epsg', 0), spacing_m=info.get('spacing_m', 0))
-        print(date, 'downloaded', f'{time.time() - t:.0f}s')
+    todo = [d for d in (dates[:a.limit] if a.limit else dates) if not os.path.exists(os.path.join(cachedir, f'{d}.npz'))]
+    print(f'@progress 0.02 {len(dates)} NISAR dates found, {len(todo)} to download', flush=True)
+    with ProcessPoolExecutor(WORKERS) as pool:  # 1) download what is not cached yet (the progress bar: 2% to 85%)
+        jobs = [pool.submit(download_to_cache, by_date[d], bbox, a.freq, d, os.path.join(cachedir, f'{d}.npz'), OUT_PX) for d in todo]
+        for i, job in enumerate(as_completed(jobs)):
+            print(f'@progress {0.02 + 0.83 * (i + 1) / len(todo):.3f} {job.result()} ({i + 1}/{len(todo)})', flush=True)
     cached = {}  # <date>.npz only, not the _z13 tile caches; dates with almost no data are left out
     for f in sorted(os.listdir(cachedir)):
         if len(f) == 14 and f.endswith('.npz'):
             z = np.load(os.path.join(cachedir, f))
-            if np.isfinite(z['hh'].astype(np.float32)).mean() >= 0.05:
+            if np.isfinite(z['hh'].astype(np.float32)).mean() >= opts.get('min_valid', 0.05):
                 cached[f[:10]] = z
     med = {d: float(np.nanmedian(z['hh'].astype(np.float32))) for d, z in cached.items()}
     usual = float(np.median(list(med.values())))
-    suspect = {d for d, m in med.items() if abs(m - usual) > SUSPECT_DB}
+    suspect = {d for d, m in med.items() if abs(m - usual) > opts.get('suspect_db', SUSPECT_DB)}
     good = [d for d in cached if d not in suspect]
     mh, mv, nobs = medians([cached[d]['hh'] for d in good], [cached[d]['hv'] for d in good])
     with np.errstate(invalid='ignore'):
@@ -277,7 +318,8 @@ def main():
     pass_med = {p: medians([cached[d]['hh'] for d in good if passes[d] == p], [cached[d]['hv'] for d in good if passes[d] == p])[:2]
                 for p in set(passes.values())}
     manifest['scenes'] = {}
-    for date, z in cached.items():  # 2) rebuild every product with the same masks
+    for i, (date, z) in enumerate(cached.items()):  # 2) rebuild every product with the same masks (85% to 100%)
+        print(f'@progress {0.85 + 0.15 * i / len(cached):.3f} building images {i + 1}/{len(cached)}', flush=True)
         hh, hv = z['hh'].astype(np.float32), z['hv'].astype(np.float32)
         valid = float(np.isfinite(hh).mean())
         shares = build_products(hh, hv, outdir, date, perm, built)
@@ -289,6 +331,22 @@ def main():
                                     'pass': passes[date], 'suspect': date in suspect,
                                     'class_share': shares}
         print(date, f'{valid:.0%} valid', shares)
+    manifest.pop('mosaic', None)
+    if opts.get('mosaic') and good:
+        order = sorted(good, reverse=True)
+        hh = np.full(cached[order[0]]['hh'].shape, np.nan, dtype=np.float32)
+        hv = hh.copy()
+        for d in order:  # newest first: each pixel keeps its most recent observation
+            gap = np.isnan(hh)
+            if not gap.any():
+                break
+            hh[gap], hv[gap] = cached[d]['hh'].astype(np.float32)[gap], cached[d]['hv'].astype(np.float32)[gap]
+        shares = build_products(hh, hv, outdir, MOSAIC, perm, built)
+        to_image(hh, hv, os.path.join(outdir, f'{MOSAIC}_steady.webp'))  # mixed passes: no single pass to steady
+        manifest['mosaic'] = {'key': MOSAIC, 'dates': len(order), 'first': order[-1], 'last': order[0],
+                              'valid': round(float(np.isfinite(hh).mean()), 3), 'class_share': shares,
+                              'note': 'newest valid pixel of every date; seams where orbit passes meet'}
+        print('mosaic of', len(order), 'dates:', f'{np.isfinite(hh).mean():.0%} of the box', flush=True)
     manifest.update({'area': name, 'bbox': bbox, 'frequency': a.freq, 'stretch': STRETCH,
                      'composite': 'R=HH, G=HV, B=HH-HV (dB, gamma0 RTC)',
                      'classes': [{'value': v, 'key': k, 'rule': d} for v, k, d, _ in CLASSES],

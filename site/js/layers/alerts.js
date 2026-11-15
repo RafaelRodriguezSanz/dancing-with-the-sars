@@ -1,6 +1,6 @@
 import { defineLayer } from '../domain/layer.js';
 import { SANTA_LUCIA } from '../domain/scene.js';
-import { CALIBRATED_DIR } from './nisarCalibrated.js';
+import { DATA } from './nisarCalibrated.js';
 
 /** Alert kinds: `value` filters them in the side panel, `kind` matches the property in alerts.json. */
 export const ALERT_KINDS = [
@@ -25,7 +25,7 @@ export default defineLayer({
   classes: ALERT_KINDS,
   tiers: [{
     id: 'alerts', label: 'NISAR change alerts', kind: 'geojson',
-    url: () => `${CALIBRATED_DIR}/alerts.json`,
+    url: () => `${DATA.dir}/alerts.json`,
     attribution: 'Alerts derived from NISAR GCOV (NASA-ISRO)',
   }],
 });

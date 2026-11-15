@@ -56,3 +56,17 @@ test('FallbackSceneRepository reads scenes from json', async () => {
   const scenes = await new FallbackSceneRepository(async () => ok(body)).findScenes();
   assert.equal(scenes[0].start, '2026-06-01T00:00:00Z');
 });
+
+test('parseOverpass keeps closed ways and outer rings as town polygons', async () => {
+  const { parseOverpass, overpassQuery } = await import('./osmTowns.js');
+  const sq = [{ lat: 0, lon: 0 }, { lat: 0, lon: 0.01 }, { lat: 0.01, lon: 0.01 }, { lat: 0.01, lon: 0 }, { lat: 0, lon: 0 }];
+  const fc = parseOverpass({ elements: [
+    { type: 'way', tags: { landuse: 'residential', name: 'X' }, geometry: sq },
+    { type: 'way', tags: { landuse: 'retail' }, geometry: sq.slice(0, 3) }, // open: skipped
+    { type: 'relation', tags: { landuse: 'industrial' }, members: [{ role: 'outer', geometry: sq }, { role: 'inner', geometry: sq }] },
+  ] });
+  assert.equal(fc.features.length, 2);
+  assert.equal(fc.features[0].properties.kind, 'town');
+  assert.ok(Math.abs(fc.features[0].properties.area_ha - 123) < 2); // ~1.1 km a side
+  assert.match(overpassQuery([1, 2, 3, 4]), /\(2,1,4,3\)/);
+});
