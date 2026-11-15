@@ -21,10 +21,10 @@ test('tierZoomRanges splits the zoom range between usable tiers', () => {
 });
 
 test('LayerState toggles only known layers', () => {
-  const s = new LayerState(LAYERS, ['nisar-gcov', 'nope']);
-  assert.deepEqual(s.activeLayers().map((l) => l.id), ['nisar-gcov']);
-  s.toggle('nisar-gcov');
-  assert.equal(s.isActive('nisar-gcov'), false);
+  const s = new LayerState(LAYERS, ['built-up', 'nope']);
+  assert.deepEqual(s.activeLayers().map((l) => l.id), ['built-up']);
+  s.toggle('built-up');
+  assert.equal(s.isActive('built-up'), false);
   assert.throws(() => s.toggle('nope'), /unknown/);
 });
 

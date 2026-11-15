@@ -9,10 +9,11 @@ Three kinds, each a patch of connected pixels with simple, explainable rules on 
   crop-growth      low HV before (< -18 dB) and HV rises >= 4 dB, lasting (crops or pasture growing)
 Comparisons remove each pass's own per-pixel median first, so the three viewing geometries
 (passes) can be mixed. Dates flagged suspect in the manifest (calibration outliers) are skipped.
-Alerts are candidates to check, not confirmed events.
+Alerts are candidates to check, not confirmed events. Flood candidates carry the rain of the 7 days
+before (Open-Meteo ERA5, scripts/rainfall.py) as context.
 
 Output: site/data/nisar/<area>/alerts.json (GeoJSON, one polygon per alert = the patch outline, smoothed).
-Usage: .venv/Scripts/python scripts/nisar_alerts.py [--area santa-lucia]
+Usage: .venv/Scripts/python scripts/nisar_alerts.py [--area santa-lucia | --bbox w,s,e,n]
 """
 import argparse
 import json
@@ -24,8 +25,9 @@ import numpy as np
 from scipy import ndimage
 
 sys.path.insert(0, os.path.dirname(__file__))
-from nisar_subset import AREAS, ROOT, WATER, permanent_water  # noqa: E402
+from nisar_subset import AREAS, ROOT, WATER, permanent_water, resolve_area  # noqa: E402
 from outline import outline  # noqa: E402
+from rainfall import rain_before, verdict  # noqa: E402
 
 PIXEL_HA = 0.64  # ~80 m x 80 m
 WINDOW = 4  # dates before / after a candidate change
@@ -60,10 +62,11 @@ def patches(mask, kind, date, extra, lonlat, limit=15):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--area', default='santa-lucia', choices=AREAS)
+    ap.add_argument('--bbox', help='any box instead of --area: w,s,e,n in degrees')
     a = ap.parse_args()
-    name, bbox = AREAS[a.area]
-    base = os.path.join(ROOT, 'site', 'data', 'nisar', a.area)
-    cachedir = os.path.join(ROOT, 'data', 'raw', 'nisar', a.area)
+    slug, name, bbox = resolve_area(a.area, a.bbox)
+    base = os.path.join(ROOT, 'site', 'data', 'nisar', slug)
+    cachedir = os.path.join(ROOT, 'data', 'raw', 'nisar', slug)
     scenes = json.load(open(os.path.join(base, 'manifest.json'), encoding='utf-8'))['scenes']
     dates = [d for d in sorted(scenes) if not scenes[d].get('suspect')]
     load = lambda d: np.load(os.path.join(cachedir, f'{d}.npz'))  # noqa: E731
@@ -90,6 +93,12 @@ def main():
                  & ~perm & ~WATER(usual_hh[t], usual_hv[t]) & near_perm)
         flood = ndimage.binary_opening(flood)  # drop isolated speckle
         features += patches(flood, 'flood', d, {'hh_db': HH[t], 'usual_hh_db': usual_hh[t]}, lonlat)
+    for f in features:  # rain context: dark radar after a dry week is more likely bare soil
+        ring = f['geometry']['coordinates'][0]
+        lon, lat = (sum(c[i] for c in ring) / len(ring) for i in (0, 1))
+        mm = rain_before(lat, lon, f['properties']['date'], dates[0], dates[-1])
+        if mm is not None:
+            f['properties'].update(rain_7d_mm=mm, rain=verdict(mm))
 
     best = {k: np.zeros((ny, nx), np.float32) for k in ('loss', 'gain')}  # strongest lasting change per pixel
     when = {k: np.full((ny, nx), -1, int) for k in best}

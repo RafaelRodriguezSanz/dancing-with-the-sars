@@ -1,8 +1,9 @@
-/** Layer registry: one import + one array entry per change type. */
-import nisarCalibrated from './nisarCalibrated.js';
-import nisarGcov from './nisarGcov.js';
+/** Layer registry: one import + one array entry per change type. All are products derived from the real
+ * NISAR images (listed under "NISAR radar"); the raw backscatter views (nisarCalibrated.js, nisarGcov.js)
+ * are kept as modules but not offered in the menu. */
 import landCover from './landCover.js';
 import alerts from './alerts.js';
 import builtUp from './builtUp.js';
 
-export const LAYERS = [nisarCalibrated, landCover, builtUp, alerts, nisarGcov];
+export const LAYERS = [landCover, builtUp, alerts];
+export const LAYERS_HEADING = 'NISAR radar';

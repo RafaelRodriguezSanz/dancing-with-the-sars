@@ -6,10 +6,12 @@ __pycache__/
 .venv/
 .env
 .env.*
+!.env.example
 data/raw/
 *.tif
 *.SAFE/
 node_modules/
 
-# Processed NISAR products: built locally with scripts/nisar_*.py (Earthdata token needed), not versioned
-site/data/nisar/
+# Processed NISAR products: built locally with scripts/nisar_*.py (Earthdata token needed).
+# The named demo areas are versioned so GitHub Pages can serve them; areas drawn on the map (aoi_*) are not.
+site/data/nisar/aoi_*/

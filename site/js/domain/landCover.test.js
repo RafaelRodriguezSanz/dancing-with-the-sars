@@ -24,5 +24,5 @@ test('LayerState keeps per-layer class filters, all on by default', () => {
   assert.equal(s.enabledClasses('land-cover').size, LAND_COVER_CLASSES.length);
   s.toggleClass('land-cover', 1, false);
   assert.equal(s.enabledClasses('land-cover').has(1), false);
-  assert.equal(s.enabledClasses('nisar-gcov'), null);
+  assert.equal(s.enabledClasses('nope'), null);
 });

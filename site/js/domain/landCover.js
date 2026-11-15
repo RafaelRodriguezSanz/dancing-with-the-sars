@@ -11,7 +11,7 @@ export const LAND_COVER_CLASSES = Object.freeze([
     caveat: 'Smooth bare or freshly tilled fields look the same.' },
   { value: 2, key: 'woody', label: 'Woody vegetation', color: [25, 150, 50],
     rule: 'High HV: radar scatters inside branches and trunks.',
-    caveat: 'Towns full of trees can still appear here; most towns are moved to the Built-up layer.' },
+    caveat: 'Leafy towns read as woody here; turn on Built-up areas to cover them with the OpenStreetMap towns.' },
   { value: 3, key: 'double-bounce', label: 'Double bounce (flooded vegetation, structures)', color: [255, 60, 200],
     rule: 'Very high HH, much higher than HV: double bounce (walls, or stems standing in water).',
     caveat: 'On a single date: flooded marsh or isolated buildings. Towns, bright on every date, are in the Built-up layer.' },

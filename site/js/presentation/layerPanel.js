@@ -1,13 +1,17 @@
 /** Floating side panel over the map: layer checkboxes, and class checkboxes for layers that have classes. No Leaflet here. */
 export class LayerPanel {
-  constructor(panel, layers, state, { onLayer, onClass }) {
+  constructor(panel, layers, state, { heading, onLayer, onClass }) {
     const list = panel.querySelector('.panel-body');
     const toggle = panel.querySelector('.panel-toggle');
     toggle.addEventListener('click', () => {
       const open = panel.classList.toggle('collapsed') === false;
       toggle.setAttribute('aria-expanded', String(open));
     });
-    list.replaceChildren(...layers.map((layer) => {
+    const title = document.createElement('h3');
+    title.className = 'panel-heading';
+    title.textContent = heading ?? '';
+    title.hidden = !heading;
+    list.replaceChildren(title, ...layers.map((layer) => {
       const group = document.createElement('div');
       group.className = 'layer-group';
       const sub = layer.classes ? this.classList(layer, state, onClass) : null;
