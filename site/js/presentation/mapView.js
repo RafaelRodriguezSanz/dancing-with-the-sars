@@ -419,7 +419,8 @@ export class MapView {
       this.overlays.set(id, [id]);
       return;
     }
-    this.map.addSource(id, { type: 'geojson', data: spec.geojson, attribution: spec.attribution });
+    // MapLibre rejects attribution: undefined, so only pass it when there is one.
+    this.map.addSource(id, { type: 'geojson', data: spec.geojson, ...(spec.attribution ? { attribution: spec.attribution } : {}) });
     const lids = spec.layers.map((l, i) => { const lid = `${id}-${i}`; this.map.addLayer({ id: lid, source: id, ...l }); return lid; });
     this.overlays.set(id, lids);
     if (spec.popup) {
