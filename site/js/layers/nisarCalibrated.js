@@ -9,6 +9,13 @@ export function areaDir(bbox) {
   const named = NAMED.find(([, b]) => b.every((v, i) => Math.abs(v - bbox[i]) < 5e-5));
   return `data/nisar/${named ? named[0] : `aoi_${bbox.map((v) => v.toFixed(4)).join('_')}`}`;
 }
+/** Precomputed folders whose box holds the whole view, smallest first: fallbacks for products an area lacks. */
+export function precomputedDirs(view) {
+  const [w, s, e, n] = view;
+  const area = (b) => (b[2] - b[0]) * (b[3] - b[1]);
+  return NAMED.filter(([, b]) => w >= b[0] && s >= b[1] && e <= b[2] && n <= b[3])
+    .sort((a, b) => area(a[1]) - area(b[1])).map(([slug]) => `data/nisar/${slug}`);
+}
 export const DATA = { dir: areaDir(SANTA_LUCIA.bbox) };
 export function setCalibratedArea(bbox) { DATA.dir = areaDir(bbox); HIRES_DATES.clear(); }
 /** Dates with high-resolution tiles (frequency A); filled at start-up from tiles/index.json. */
