@@ -23,5 +23,9 @@ $(VENV): requirements.txt
 	$(PY) -m pip install -q -r requirements.txt
 	@echo ok > $(VENV)
 
-test:  ## unit tests of the site
-	node --test site/js/*/*.test.js
+test: node_modules  ## unit tests of the site (Jest, tests/)
+	npm test
+
+node_modules: package.json
+	npm install --no-audit --no-fund
+	@touch node_modules

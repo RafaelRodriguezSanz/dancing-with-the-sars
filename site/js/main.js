@@ -1,5 +1,5 @@
 /** Composition root: the only place that wires concrete classes. */
-import { URUGUAY } from './domain/scene.js';
+import { MONTEVIDEO, SANTA_LUCIA, URUGUAY } from './domain/scene.js';
 import { listScenesForArea, withMosaic } from './application/listScenes.js';
 import { pickDefaultDate } from './application/selectDate.js';
 import { CmrSceneRepository } from './infrastructure/cmrSceneRepository.js';
@@ -20,16 +20,17 @@ import { BootScreen } from './presentation/bootScreen.js';
 import { EvolutionPanel } from './presentation/evolutionPanel.js';
 import { evolutionSeries } from './application/evolution.js';
 import { LAND_COVER_CLASSES } from './domain/landCover.js';
-import { areaFromCorners, areaFromHash, areaToHash } from './domain/area.js';
+import { areaFromCorners, areaFromHash, areaToHash, MAX_AREA_SPAN_DEG } from './domain/area.js';
+import { findPlace } from './infrastructure/placeSearch.js';
 import { FloodPanel } from './presentation/floodPanel.js';
 import { OsmEvacuationRepository } from './infrastructure/osmEvacuation.js';
 import { ReadmeViewer } from './presentation/readmeViewer.js';
 
 const fetchFn = (...args) => fetch(...args);
-let area = areaFromHash(location.hash) ?? URUGUAY;
+let area = areaFromHash(location.hash) ?? SANTA_LUCIA;
 const map = new MapView('map', area);
-const boot = new BootScreen(document, map, area.bbox, `Scanning ${area === URUGUAY ? 'Uruguay' : 'the area'} with NISAR`);
-const state = new LayerState(LAYERS, ['land-cover']);
+const boot = new BootScreen(document, map, area.bbox, `Scanning ${area === SANTA_LUCIA ? 'the Santa Lucía basin' : 'the area'} with NISAR`);
+const state = new LayerState(LAYERS, LAYERS.map((l) => l.id));
 let currentDate = null;
 let gibsCovered = false;
 const refresh = (layer) => {
@@ -91,7 +92,7 @@ const processPanel = new ProcessPanel(document, new ProcessingApi(fetchFn), {
 async function loadArea(aoi) {
   const mine = ++request; // ignore answers for an area the user already replaced
   area = aoi;
-  history.replaceState(null, '', aoi === URUGUAY ? location.pathname : areaToHash(aoi));
+  history.replaceState(null, '', aoi === SANTA_LUCIA ? location.pathname : areaToHash(aoi));
   const [w, s, e, n] = aoi.bbox;
   areaInfo.textContent = `${aoi.name}: ${w}, ${s} to ${e}, ${n}`;
   map.setArea(aoi);
@@ -105,6 +106,8 @@ async function loadArea(aoi) {
     const { source } = listed;
     const entries = withMosaic(listed.entries, manifest);
     boot.step(0.6, manifest?.mosaic ? `Drawing land cover from ${manifest.mosaic.dates} radar passes...` : 'Drawing land cover...');
+    const scenes = manifest?.scenes ?? {};
+    controls.quality = (d) => (!scenes[d] || scenes[d].suspect ? 'none' : HIRES_DATES.has(d) ? 'best' : 'data');
     controls.setEntries(entries, manifest?.mosaic ? manifest.mosaic.key : pickDefaultDate(entries));
     const usable = entries.filter((x) => x.usable).length;
     controls.setStatus(entries.length === 0
@@ -122,6 +125,32 @@ async function loadArea(aoi) {
 new AreaSelector(map, document, {
   onArea: (c1, c2) => loadArea(areaFromCorners(c1, c2)),
   onError: (e) => controls.setStatus(e.message),
+});
+
+// Find a country or region by name; analyzing it needs the local server (see About > Other countries).
+const searchMsg = document.getElementById('search-msg');
+// Areas precomputed on the public site: one click, no server needed.
+const READY = { 'santa-lucia': SANTA_LUCIA, montevideo: MONTEVIDEO, uruguay: URUGUAY };
+for (const b of document.querySelectorAll('[data-area]')) {
+  b.addEventListener('click', () => { searchMsg.textContent = ''; loadArea(READY[b.dataset.area]); });
+}
+document.getElementById('place-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const query = document.getElementById('place').value.trim();
+  if (!query) return;
+  searchMsg.textContent = `Looking for ${query}...`;
+  try {
+    const hit = await findPlace(fetchFn, query);
+    if (!hit) { searchMsg.textContent = `Nothing found for "${query}".`; return; }
+    const [w, s, e, n] = hit.bbox;
+    if (e - w > MAX_AREA_SPAN_DEG || n - s > MAX_AREA_SPAN_DEG) {
+      searchMsg.textContent = `${hit.name} is larger than ${MAX_AREA_SPAN_DEG}° per side: draw a part of it instead.`;
+      map.map.fitBounds([[w, s], [e, n]], { padding: map.freePadding() });
+      return;
+    }
+    searchMsg.textContent = '';
+    await loadArea(areaFromCorners([w, s], [e, n], hit.name));
+  } catch (e) { searchMsg.textContent = `Search failed: ${e.message}`; }
 });
 controls.badge = (date) => (HIRES_DATES.has(date) ? ' · high-res' : ''); // zoom in on these dates for 16 m
 
@@ -151,8 +180,19 @@ document.getElementById('evolution').addEventListener('click', async () => {
     : 'Time runs at real pace: one second is about 4 days. Dates from three orbit passes alternate; their viewing angles cause part of the zig-zag.');
 });
 // El Niño flood response: flood scenario, dry refuges and evacuation routes for the current view.
-new FloodPanel(document, map, new OsmEvacuationRepository(fetchFn), fetchFn, {
+const flood = new FloodPanel(document, map, new OsmEvacuationRepository(fetchFn), fetchFn, {
   nisarWater: () => (currentDate ? { url: `${DATA.dir}/${currentDate}_classes.png`, bbox: area.bbox } : null),
+  dataDir: () => DATA.dir,
 });
+// The main "El Niño floods" button opens the card and analyzes the view in one click; closing clears the map.
+const floodCard = document.getElementById('flood');
+const floodBtn = document.getElementById('flood-open');
+const showFlood = (on) => { floodCard.hidden = !on; floodBtn.classList.toggle('on', on); floodBtn.setAttribute('aria-expanded', String(on)); };
+floodBtn.addEventListener('click', () => {
+  if (!floodCard.hidden) { flood.clear(); showFlood(false); return; }
+  showFlood(true);
+  flood.run();
+});
+document.getElementById('flood-close').addEventListener('click', () => { flood.clear(); showFlood(false); });
 new ReadmeViewer(document, fetchFn);
 await loadArea(area);

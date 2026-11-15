@@ -7,10 +7,10 @@ const URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}
 const TILE = 256;
 export const TERRAIN_ATTRIBUTION = 'Terrain: NASA SRTM via Terrain Tiles (AWS Open Data, Mapzen)';
 
-const lonToX = (lon, z) => ((lon + 180) / 360) * 2 ** z;
-const latToY = (lat, z) => { const r = (lat * Math.PI) / 180; return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z; };
-const xToLon = (x, z) => (x / 2 ** z) * 360 - 180;
-const yToLat = (y, z) => { const n = Math.PI - (2 * Math.PI * y) / 2 ** z; return (180 / Math.PI) * Math.atan(Math.sinh(n)); };
+export const lonToX = (lon, z) => ((lon + 180) / 360) * 2 ** z;
+export const latToY = (lat, z) => { const r = (lat * Math.PI) / 180; return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z; };
+export const xToLon = (x, z) => (x / 2 ** z) * 360 - 180;
+export const yToLat = (y, z) => { const n = Math.PI - (2 * Math.PI * y) / 2 ** z; return (180 / Math.PI) * Math.atan(Math.sinh(n)); };
 
 /** Deepest zoom (<= 13, about SRTM's 30 m at Uruguay's latitude) whose tiles over bbox are at most maxTiles. */
 export function terrainZoom([w, s, e, n], maxTiles = 16) {

@@ -14,10 +14,12 @@ Agreement is not accuracy, but large disagreement shows where the radar rules fa
 Usage:  python scripts/validate.py --area santa-lucia   (or --bbox w,s,e,n for a processed box)
 """
 import argparse
+import io
 import json
 import math
 import os
 import ssl
+import struct
 import sys
 import urllib.request
 
@@ -82,6 +84,22 @@ def lzw(data, size):
     return bytes(out[:size])
 
 
+def lzw_tile(data, tw, th):
+    """One LZW tile decoded in C: wrapped in a minimal one-strip TIFF for Pillow's libtiff (about 7x faster
+    than lzw()); falls back to the pure-Python decoder when libtiff is missing."""
+    tags = [(256, 3, tw), (257, 3, th), (258, 3, 8), (259, 3, 5), (262, 3, 1), (273, 4, 0), (277, 3, 1), (278, 3, th), (279, 4, len(data))]
+    start = 8 + 2 + len(tags) * 12 + 4
+    head = bytearray(b'II*\x00' + struct.pack('<IH', 8, len(tags)))
+    for tag, typ, val in tags:
+        val = start if tag == 273 else val
+        head += struct.pack('<HHI', tag, typ, 1) + (struct.pack('<HH', val, 0) if typ == 3 else struct.pack('<I', val))
+    try:
+        return np.asarray(Image.open(io.BytesIO(bytes(head) + b'\0\0\0\0' + data))).reshape(th, tw)
+    except Exception:
+        arr = np.frombuffer(lzw(data, tw * th), dtype=np.uint8)
+        return np.pad(arr, (0, tw * th - arr.size)).reshape(th, tw)
+
+
 def sample_tiled(path, west, north, deg, lon, lat):
     """Nearest pixel of a tiled LZW uint8 GeoTIFF, decoding only the tiles the points fall in."""
     im = Image.open(path)
@@ -95,13 +113,14 @@ def sample_tiled(path, west, north, deg, lon, lat):
     out = np.full(lon.shape, -1, dtype=np.int16)
     per_row = -(-w // tw)
     tile = (row // th) * per_row + col // tw
+    idx = np.flatnonzero(inside.ravel())
+    idx = idx[np.argsort(tile.ravel()[idx], kind='stable')]  # points grouped by tile: one pass, not one mask per tile
+    keys, starts = np.unique(tile.ravel()[idx], return_index=True)
+    flat, r, c = out.ravel(), row.ravel(), col.ravel()
     with open(path, 'rb') as f:
-        for k in np.unique(tile[inside]):
+        for k, sel in zip(keys, np.split(idx, starts[1:])):
             f.seek(offs[k])
-            arr = np.frombuffer(lzw(f.read(counts[k]), tw * th), dtype=np.uint8)
-            arr = np.pad(arr, (0, tw * th - arr.size)).reshape(th, tw)
-            sel = inside & (tile == k)
-            out[sel] = arr[row[sel] % th, col[sel] % tw]
+            flat[sel] = lzw_tile(f.read(counts[k]), tw, th)[r[sel] % th, c[sel] % tw]
     return out
 
 
@@ -202,7 +221,11 @@ def main():
     gsw = surface_water(lon, lat)
     seen = (gsw >= 0) & (gsw <= 100) & (mode > 0)
     ref_w = seen & (gsw >= GSW_WATER)
-    our_w = seen & (mode == 5)
+    radar = os.path.join(outdir, 'permanent_water_radar.png')  # independent of JRC (products may add JRC water)
+    if os.path.exists(radar):
+        our_w = seen & (np.asarray(Image.open(radar)) > 0)
+    else:
+        our_w = seen & (mode == 5)
     inter, union = int((ref_w & our_w).sum()), int((ref_w | our_w).sum())
     water = {'reference': f'JRC Global Surface Water occurrence >= {GSW_WATER}% (1984-2021)',
              'iou': round(inter / union, 3) if union else None,

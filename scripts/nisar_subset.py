@@ -36,10 +36,21 @@ from nisar_access import find_granules, signed_url  # noqa: E402
 from outline import outline  # noqa: E402
 
 AREAS = {'santa-lucia': ('Santa Lucía basin', [-56.75, -34.75, -56.05, -34.15]),
+         'montevideo': ('Montevideo', [-56.45, -34.97, -56.0, -34.7]),
          'uruguay': ('Uruguay', [-58.5, -35.0, -53.1, -30.1])}
 # Per-area overrides. Uruguay: 200 m pixels (a country, not a basin); one pass covers only a strip of it, so a date
 # counts from 1% coverage, and the date-median outlier test is off (each strip sees different land and sea).
-AREA_OPTS = {'uruguay': {'out_px': 2700, 'min_valid': 0.01, 'suspect_db': 99, 'mosaic': True}}
+COUNTRY_OPTS = {'out_px': 2700, 'min_valid': 0.01, 'suspect_db': 99, 'mosaic': True}
+AREA_OPTS = {'uruguay': COUNTRY_OPTS}
+COUNTRY_SPAN_DEG = 1.5  # boxes wider than this (any side) are processed like a country: mosaic, ~2700 px
+
+
+def area_options(slug, bbox):
+    """Processing options of an area: named ones from AREA_OPTS; any big drawn box (a country or a region
+    found by name in the site) gets the country options, since one pass covers only a strip of it."""
+    if slug in AREA_OPTS:
+        return AREA_OPTS[slug]
+    return COUNTRY_OPTS if max(bbox[2] - bbox[0], bbox[3] - bbox[1]) > COUNTRY_SPAN_DEG else {}
 MOSAIC = 'latest'  # products key of the mosaic: newest valid pixel of all dates (a country needs many passes)
 WORKERS = int(os.environ.get('NISAR_WORKERS', 4))  # dates downloaded in parallel (separate processes: h5py serialises threads)
 
@@ -84,7 +95,7 @@ CLASSES = [
      lambda hh, hv: (hh > -4) & (hh - hv > 9)),
     (4, 'herbaceous', 'Grassland and crops: everything else with data',
      lambda hh, hv: np.isfinite(hh) & np.isfinite(hv)),
-    (5, 'permanent-water', 'Permanent water: the water rule holds on the median of all dates (rivers, lakes, reservoirs)',
+    (5, 'permanent-water', 'Permanent water: the water rule holds on the median of all dates (rivers, lakes, reservoirs), plus open water that is nearly always there in JRC Global Surface Water (wind makes it too bright for radar)',
      None),  # not a per-date rule: stamped from permanent_water()
     (6, 'built-up', 'Built-up: very bright HH, far above HV, on the median of all dates (towns, sheds); shown as its own layer',
      None),  # not a per-date rule: stamped from built_up()
@@ -104,6 +115,18 @@ def pass_of(granule):
     return f'{t[:2]}:{int(t[2:]) // 10 * 10:02d} UTC'
 
 
+def nanmedian(a, axis=0):
+    """np.nanmedian over `axis` without numpy's one-warning-per-empty-pixel loop (tens of millions of
+    calls outside the swaths took minutes): sort (NaN goes last) and pick the middle valid values."""
+    a = np.asarray(a, np.float32)
+    n = np.isfinite(a).sum(axis)
+    srt = np.sort(a, axis=axis)
+    pick = lambda i: np.take_along_axis(srt, np.expand_dims(i, axis), axis).squeeze(axis)  # noqa: E731
+    out = (pick(np.maximum(n - 1, 0) // 2) + pick(n // 2)) / 2
+    out[n == 0] = np.nan
+    return out
+
+
 def medians(hh_stack, hv_stack, rows=512):
     """Per-pixel median over time of HH and HV (dB), and the number of dates with data."""
     shape = hh_stack[0].shape
@@ -114,8 +137,27 @@ def medians(hh_stack, hv_stack, rows=512):
         n[r:r + rows] = (np.isfinite(hh) & np.isfinite(hv)).sum(0)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')  # all-NaN pixels outside the swaths
-            mh[r:r + rows], mv[r:r + rows] = np.nanmedian(hh, 0), np.nanmedian(hv, 0)
+            mh[r:r + rows], mv[r:r + rows] = nanmedian(hh, 0), nanmedian(hv, 0)
     return mh, mv, n
+
+
+REFERENCE_WATER = 90  # % JRC occurrence: water almost always since 1984 (sea, estuary, big lakes)
+
+
+def reference_water(bbox, shape):
+    """Water that is there nearly always, from JRC Global Surface Water, on the product grid; None if unavailable.
+    Wind-roughened open water (the Río de la Plata, the ocean) is often too bright for the radar water rule, so
+    the radar alone would call it grassland. This mask fills it in; the radar still decides everything else."""
+    from validate import surface_water  # lazy: validate imports this module
+    w, s, e, n = bbox
+    ny, nx = shape
+    lon, lat = np.meshgrid(np.linspace(w, e, nx), np.linspace(n, s, ny))  # same grid as cut()
+    try:
+        occ = surface_water(lon, lat)
+    except Exception as err:  # offline or server down: keep the radar-only mask
+        print('reference water unavailable:', type(err).__name__, str(err)[:80], flush=True)
+        return None
+    return (occ >= REFERENCE_WATER) & (occ <= 100)
 
 
 def permanent_water(hh_stack, hv_stack, min_obs=MIN_OBS):
@@ -146,7 +188,8 @@ def built_up_geojson(mask, mh, mv, bbox):
         r0, c0 = sl[0].start - 1, sl[1].start - 1
         patch = np.pad(lab[sl] == i + 1, 1)
         ring = [[round(w + (c0 + x) / nx * (e - w), 5), round(n - (r0 + y) / ny * (n - s), 5)] for x, y in outline(patch)]
-        rows, cols = np.nonzero(lab == i + 1)
+        rows, cols = np.nonzero(patch[1:-1, 1:-1])
+        rows, cols = rows + sl[0].start, cols + sl[1].start
         feats.append({'type': 'Feature', 'geometry': {'type': 'Polygon', 'coordinates': [ring[::-1] + [ring[-1]]]},
                       'properties': {'kind': 'built-up', 'area_ha': round(len(rows) * 0.64, 1),
                                      'median_HH_db': round(float(np.nanmedian(mh[rows, cols])), 1),
@@ -205,7 +248,7 @@ def to_image(hh, hv, path):
     rgb = np.stack([scale(hh, *STRETCH['HH']), scale(hv, *STRETCH['HV']), scale(hh - hv, *STRETCH['RATIO'])], axis=-1)
     alpha = np.where(np.isnan(hh) | np.isnan(hv), 0, 255)
     img = np.dstack([np.nan_to_num(rgb), alpha]).astype(np.uint8)
-    Image.fromarray(img, 'RGBA').save(path, quality=80, method=6)  # WebP: ~150 KB per date
+    Image.fromarray(img, 'RGBA').save(path, quality=80, method=4)  # WebP: ~150 KB per date; method 6 was 3x slower for ~5% smaller
 
 
 def classify(hh, hv):
@@ -278,7 +321,7 @@ def main():
     a = ap.parse_args()
     slug, name, bbox = resolve_area(a.area, a.bbox)
     global OUT_PX
-    opts = AREA_OPTS.get(slug, {})
+    opts = area_options(slug, bbox)
     OUT_PX = opts.get('out_px', OUT_PX)
     outdir = os.path.join(ROOT, 'site', 'data', 'nisar', slug)
     cachedir = os.path.join(ROOT, 'data', 'raw', 'nisar', slug)
@@ -311,6 +354,11 @@ def main():
     mh, mv, nobs = medians([cached[d]['hh'] for d in good], [cached[d]['hv'] for d in good])
     with np.errstate(invalid='ignore'):
         perm = WATER(mh, mv) & (nobs >= MIN_OBS)
+    Image.fromarray(perm.astype(np.uint8) * 255).save(os.path.join(outdir, 'permanent_water_radar.png'))  # radar only, for validate.py
+    ref = reference_water(bbox, perm.shape)
+    if ref is not None:
+        print(f'reference water (JRC >= {REFERENCE_WATER}%) adds {(ref & ~perm & (nobs > 0)).mean():.2%} of the box', flush=True)
+        perm |= ref & (nobs > 0)
     built = built_up(mh, mv, nobs) & ~perm
     print('permanent water from', len(good), 'dates:', f'{perm.mean():.2%} of the box; built-up {built.mean():.2%}; suspect:', sorted(suspect))
     json.dump(built_up_geojson(built, mh, mv, bbox), open(os.path.join(outdir, 'builtup.json'), 'w', encoding='utf-8'), separators=(',', ':'))
@@ -350,7 +398,8 @@ def main():
     manifest.update({'area': name, 'bbox': bbox, 'frequency': a.freq, 'stretch': STRETCH,
                      'composite': 'R=HH, G=HV, B=HH-HV (dB, gamma0 RTC)',
                      'classes': [{'value': v, 'key': k, 'rule': d} for v, k, d, _ in CLASSES],
-                     'permanent_water': {'dates': len(good), 'min_obs': MIN_OBS, 'share': round(float(perm.mean()), 4)},
+                     'permanent_water': {'dates': len(good), 'min_obs': MIN_OBS, 'share': round(float(perm.mean()), 4),
+                                         'reference': f'plus JRC Global Surface Water occurrence >= {REFERENCE_WATER}% (open water roughened by wind)' if ref is not None else None},
                      'built_up': {'median_hh_above_db': BUILT_HH, 'median_hh_minus_hv_above_db': BUILT_RATIO,
                                   'min_pixels': BUILT_MIN_PX, 'share': round(float(built.mean()), 4)},
                      'steady': 'per-pixel median of each orbit pass replaced by the median of all dates',

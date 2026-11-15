@@ -41,5 +41,7 @@ export function createAreaOfInterest(name, [west, south, east, north]) {
 }
 
 export const SANTA_LUCIA = createAreaOfInterest('Santa Lucia lower basin', [-56.75, -34.75, -56.05, -34.15]);
-/** Country view, processed beforehand at 200 m (scripts/nisar_subset.py --area uruguay): the page's start. */
+/** The capital, processed beforehand like Santa Lucía (80 m, 16 m tiles on a few dates). */
+export const MONTEVIDEO = createAreaOfInterest('Montevideo', [-56.45, -34.97, -56.0, -34.7]);
+/** Country view, processed beforehand at 200 m (scripts/nisar_subset.py --area uruguay). */
 export const URUGUAY = createAreaOfInterest('Uruguay', [-58.5, -35.0, -53.1, -30.1]);

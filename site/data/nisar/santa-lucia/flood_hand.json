@@ -1,0 +1,36 @@
+{
+ "area": "Santa Luc\u00eda basin",
+ "bbox": [
+  -56.75,
+  -34.75,
+  -56.05,
+  -34.15
+ ],
+ "zoom": 10,
+ "tx0": 350,
+ "ty0": 615,
+ "width": 768,
+ "height": 768,
+ "corners": [
+  [
+   -56.953125,
+   -34.016242
+  ],
+  [
+   -55.898438,
+   -34.016242
+  ],
+  [
+   -55.898438,
+   -34.885931
+  ],
+  [
+   -56.953125,
+   -34.885931
+  ]
+ ],
+ "scale_m": 0.1,
+ "nodata": 255,
+ "water": "JRC Global Surface Water occurrence >= 50% and the sea (elevation <= 0)",
+ "terrain": "NASA SRTM via Terrain Tiles (AWS Open Data)"
+}

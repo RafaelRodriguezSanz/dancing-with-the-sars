@@ -34,9 +34,9 @@ from nisar_subset import ROOT, resolve_area  # noqa: E402
 
 CACHE_DAYS = float(os.environ.get('NISAR_CACHE_DAYS') or _dotenv().get('NISAR_CACHE_DAYS') or 7)  # areas not opened for this long are deleted
 AREA_DIRS = [os.path.join(ROOT, 'site', 'data', 'nisar'), os.path.join(ROOT, 'data', 'raw', 'nisar')]  # products, raw cuts
-MAX_SPAN_DEG = 2  # same limit as MAX_AREA_SPAN_DEG in site/js/domain/area.js
+MAX_SPAN_DEG = 10  # same limit as MAX_AREA_SPAN_DEG in site/js/domain/area.js: a mid-size country
 DEFAULT_LIMIT = 12  # newest dates; enough for permanent water (5 dates) without waiting too long
-STEPS = [(0.0, 0.95), (0.95, 1.0)]  # share of the progress bar: nisar_subset.py, then nisar_alerts.py
+STEPS = [(0.0, 0.85), (0.85, 0.92), (0.92, 1.0)]  # share of the progress bar: nisar_subset.py, nisar_alerts.py, flood_precompute.py
 HIDE = ('bearer', 'signature', 'token=')  # never echo anything that looks like a credential
 
 
@@ -113,7 +113,8 @@ class Jobs:
 
     def run(self, job, bbox, limit):
         box = ','.join(map(str, bbox))
-        steps = [['nisar_subset.py', f'--bbox={box}', f'--limit={limit}'], ['nisar_alerts.py', f'--bbox={box}']]
+        steps = [['nisar_subset.py', f'--bbox={box}', f'--limit={limit}'], ['nisar_alerts.py', f'--bbox={box}'],
+                 ['flood_precompute.py', f'--bbox={box}']]
         ok = True
         for step, (script, *args) in enumerate(steps):
             with self.lock:

@@ -16,12 +16,18 @@ DRY_MM = 5   # below this, a dark patch is more likely dry, smooth soil
 _cells = {}
 
 
+_CTX = []
+
+
 def _ctx():
-    try:
-        import certifi
-        return ssl.create_default_context(cafile=certifi.where())
-    except ImportError:
-        return None
+    """One SSL context for every request: building it (loading the CA file) took ~0.5 s each time."""
+    if not _CTX:
+        try:
+            import certifi
+            _CTX.append(ssl.create_default_context(cafile=certifi.where()))
+        except ImportError:
+            _CTX.append(None)
+    return _CTX[0]
 
 
 def _daily(lat, lon, start, end):

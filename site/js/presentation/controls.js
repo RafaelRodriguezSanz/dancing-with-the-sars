@@ -1,6 +1,7 @@
 import { stepDate } from '../application/selectDate.js';
+import { DatePicker } from './datePicker.js';
 
-/** DOM controls: date select, prev/next, opacity, status. No Leaflet here. */
+/** DOM controls: date calendar, prev/next, opacity, status. No Leaflet here. */
 export class Controls {
   constructor(doc, { onDate, onOpacity, onReset }) {
     this.el = {
@@ -16,7 +17,8 @@ export class Controls {
     this.entries = [];
     this.current = null;
     this.onDate = onDate;
-    this.el.select.addEventListener('change', () => this.select(this.el.select.value));
+    this.picker = new DatePicker(doc, this.el.select, doc.getElementById('date-cal'), (d) => this.select(d));
+    this.quality = null; // date -> 'best' | 'data' | 'none', set by main for the calendar colours
     this.el.prev.addEventListener('click', () => this.step(-1));
     this.el.next.addEventListener('click', () => this.step(1));
     this.el.opacity.addEventListener('input', () => onOpacity(Number(this.el.opacity.value) / 100));
@@ -27,19 +29,14 @@ export class Controls {
 
   setEntries(entries, defaultDate) {
     this.entries = entries;
-    this.el.select.replaceChildren(...entries.map((e) => {
-      const o = this.doc.createElement('option');
-      o.value = e.date;
-      o.textContent = optionLabel(e) + (this.badge?.(e.date) ?? '');
-      return o;
-    }));
+    this.picker.setEntries(entries, this.quality);
     this.select(defaultDate);
   }
 
   select(date) {
     this.current = date;
-    this.el.select.value = date ?? '';
     const e = this.entries.find((x) => x.date === date);
+    this.picker.setValue(date, e ? optionLabel(e) + (this.badge?.(e.date) ?? '') : null);
     const tracks = e && e.tracks.length ? e.tracks.join(', ') : '?';
     const dirs = e && e.directions.length ? e.directions.join(', ') : 'unknown direction';
     const share = e && e.aoiCoverage != null ? ` / ${Math.round(e.aoiCoverage * 100)}% of area imaged` : '';

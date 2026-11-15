@@ -1,9 +1,9 @@
 import { defineLayer } from '../domain/layer.js';
-import { SANTA_LUCIA, URUGUAY } from '../domain/scene.js';
+import { MONTEVIDEO, SANTA_LUCIA, URUGUAY } from '../domain/scene.js';
 
 /** Real NISAR GCOV values, cut from the Earthdata granules by scripts/nisar_subset.py (or on demand by
  * scripts/serve.py). One folder per area; DATA.dir follows the selected area (setCalibratedArea). */
-const NAMED = [['santa-lucia', SANTA_LUCIA.bbox], ['uruguay', URUGUAY.bbox]];
+const NAMED = [['santa-lucia', SANTA_LUCIA.bbox], ['montevideo', MONTEVIDEO.bbox], ['uruguay', URUGUAY.bbox]];
 /** Folder of a box; must match area_slug() in scripts/nisar_subset.py. */
 export function areaDir(bbox) {
   const named = NAMED.find(([, b]) => b.every((v, i) => Math.abs(v - bbox[i]) < 5e-5));
@@ -25,7 +25,7 @@ export default defineLayer({
   description: 'Real NISAR L-band backscatter cut from the NASA Earthdata granules: red = HH, green = HV (vegetation volume), blue = HH minus HV. Fixed dB scale, so dates are comparable.',
   caveat: 'Ready for Santa Lucía; any other area must be analyzed first (Analyze area, local server with an Earthdata token). 80 m from afar, 16 m when zoomed in where available. Steady colours apply to the 80 m picture; the 16 m tiles show the raw pass.',
   usesDate: true,
-  region: { name: 'Santa Lucía, Uruguay', bbox: SANTA_LUCIA.bbox },
+  region: { name: 'Uruguay', bbox: URUGUAY.bbox },
   legend: [
     { color: '#c8ff3c', label: 'Strong HV: forest, riparian woods' },
     { color: '#202a20', label: 'Dark: open water, smooth surfaces' },
