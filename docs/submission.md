@@ -63,4 +63,4 @@ Dancing with the SARs is an interactive web map that turns real NISAR L-band rad
 
 ## AI usage disclosure
 
-The code, tests and documentation were written with the help of Claude (Anthropic, via Claude Code), under the author's direction. The author chose the idea, the challenge and the approach, and reviewed the results. AI-assisted commits carry `Co-Authored-By` trailers. AI was not used to come up with the idea. No NASA logos, flags or mission identifiers are used or modified.
+The code, tests and documentation were written with the help of Claude (Anthropic, via Claude Code), under the author's direction. The author chose the idea, the challenge and the approach, and reviewed the results. AI-assisted commits carry `Co-Authored-By` trailers. AI was not used to come up with the idea. No NASA logos, flags or mission identifiers are used or modified. The 30 s demo video is a screen recording of the app; its edit was AI-assisted (Claude Code) and its music was AI-generated (composed by Claude in the ArtCraft SoundCraft app). The video carries a visible watermark saying so, and the same note is in its file metadata.
