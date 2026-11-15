@@ -31,3 +31,17 @@ export function toEntries(scenes, aoi) {
     return { ...e, covered, aoiCoverage: share, usable: covered && (share === null || share >= FULL_COVERAGE) };
   }).filter((e) => e.aoiCoverage !== 0); // passes that never touch the area (e.g. fallback for another place)
 }
+
+/**
+ * Adds the mosaic of a processed area (manifest.mosaic: newest valid pixel of many passes) as the last,
+ * default entry of the date list. Entries without a mosaic are returned unchanged.
+ */
+export function withMosaic(entries, manifest) {
+  const m = manifest?.mosaic;
+  if (!m) return entries;
+  return [...entries, {
+    date: m.key, mosaic: true, covered: true, usable: true, aoiCoverage: null, tracks: [], directions: [],
+    label: `Latest mosaic (${m.dates} passes)`,
+    info: `Newest radar pixel of ${m.dates} passes, ${m.first} to ${m.last}; seams show where passes meet`,
+  }];
+}

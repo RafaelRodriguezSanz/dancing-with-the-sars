@@ -43,9 +43,9 @@ export class Controls {
     const tracks = e && e.tracks.length ? e.tracks.join(', ') : '?';
     const dirs = e && e.directions.length ? e.directions.join(', ') : 'unknown direction';
     const share = e && e.aoiCoverage != null ? ` / ${Math.round(e.aoiCoverage * 100)}% of area imaged` : '';
-    this.el.info.textContent = e
+    this.el.info.textContent = e?.info ?? (e
       ? `Track ${tracks} / ${dirs}${share}${e.covered ? '' : ' / outside GIBS coverage, no tiles'}`
-      : 'No scene selected';
+      : 'No scene selected');
     this.el.prev.disabled = !date || stepDate(this.entries, date, -1) === null;
     this.el.next.disabled = !date || stepDate(this.entries, date, 1) === null;
     this.onDate(date ?? null, Boolean(e && e.covered)); // calibrated layers do not need GIBS coverage
@@ -58,6 +58,7 @@ export class Controls {
 }
 
 function optionLabel(e) {
+  if (e.label) return e.label;
   if (!e.covered) return `${e.date} (no GIBS tiles)`;
   if (!e.usable) return `${e.date} (partial, ${Math.round(e.aoiCoverage * 100)}%)`;
   return e.date;

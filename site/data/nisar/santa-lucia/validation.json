@@ -1,0 +1,78 @@
+{
+ "area": "Santa Luc\u00eda basin",
+ "dates": 30,
+ "ours": "most frequent radar class per pixel over all dates",
+ "land_cover": {
+  "reference": "ESA WorldCover 2021 v200 (10 m, 80 m overview)",
+  "groups": [
+   "water",
+   "woody",
+   "open",
+   "built"
+  ],
+  "matrix_rows_reference_cols_ours": [
+   [
+    13479,
+    1253,
+    4297,
+    7
+   ],
+   [
+    18,
+    64696,
+    44690,
+    1612
+   ],
+   [
+    3712,
+    14495,
+    657598,
+    4223
+   ],
+   [
+    0,
+    6653,
+    2677,
+    4081
+   ]
+  ],
+  "pixels": 823491,
+  "overall_agreement": 0.898,
+  "kappa": 0.629,
+  "per_group": {
+   "water": {
+    "reference_px": 19036,
+    "ours_px": 17209,
+    "recall": 0.708,
+    "precision": 0.783
+   },
+   "woody": {
+    "reference_px": 111016,
+    "ours_px": 87097,
+    "recall": 0.583,
+    "precision": 0.743
+   },
+   "open": {
+    "reference_px": 680028,
+    "ours_px": 709262,
+    "recall": 0.967,
+    "precision": 0.927
+   },
+   "built": {
+    "reference_px": 13411,
+    "ours_px": 9923,
+    "recall": 0.304,
+    "precision": 0.411
+   }
+  }
+ },
+ "permanent_water": {
+  "reference": "JRC Global Surface Water occurrence >= 50% (1984-2021)",
+  "iou": 0.629,
+  "recall": 0.76,
+  "precision": 0.785,
+  "reference_px": 17540,
+  "ours_px": 16995
+ },
+ "limits": "Reference maps have their own errors and are older (2021); agreement, not accuracy."
+}

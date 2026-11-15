@@ -1,16 +1,46 @@
-"""Earthdata access helpers for NISAR GCOV. The token is read from ~/.earthdata_token and never printed."""
+"""Earthdata access helpers for NISAR GCOV.
+
+The Earthdata Login token is looked up, in order, in: the EARTHDATA_TOKEN environment variable,
+the .env file at the repo root (copy .env.example), and ~/.earthdata_token. It is never printed or written.
+"""
 import json
 import os
 import urllib.error
 import urllib.request
 
 TOKEN_FILE = os.path.expanduser('~/.earthdata_token')
+ENV_FILE = os.path.join(os.path.dirname(__file__), '..', '.env')
 CMR = 'https://cmr.earthdata.nasa.gov/search/granules.umm_json'
 
 
+def _dotenv(path=ENV_FILE):
+    """KEY=value lines of a .env file (no shell expansion); {} if there is none."""
+    if not os.path.exists(path):
+        return {}
+    out = {}
+    for line in open(path, encoding='utf-8-sig'):
+        line = line.strip()
+        if line and not line.startswith('#') and '=' in line:
+            k, v = line.split('=', 1)
+            out[k.strip()] = v.strip().strip('"\'')
+    return out
+
+
 def _token():
-    with open(TOKEN_FILE, encoding='utf-8-sig') as f:
-        return f.read().strip()
+    tok = os.environ.get('EARTHDATA_TOKEN') or _dotenv().get('EARTHDATA_TOKEN')
+    if tok:
+        return tok
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, encoding='utf-8-sig') as f:
+            return f.read().strip()
+    raise RuntimeError('No Earthdata token: copy .env.example to .env and set EARTHDATA_TOKEN')
+
+
+def has_token():
+    try:
+        return bool(_token())
+    except RuntimeError:
+        return False
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
