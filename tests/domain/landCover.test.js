@@ -8,7 +8,8 @@ const px = (...values) => new Uint8ClampedArray(values.flatMap((v) => [v, v, v, 
 test('paintClasses colours enabled classes and hides the rest', () => {
   const out = paintClasses(px(0, 1, 2), new Set([1]));
   expect([...out.slice(0, 4)]).toEqual([0, 0, 0, 0]); // no data
-  expect([...out.slice(4, 8)]).toEqual([...LAND_COVER_CLASSES.find((c) => c.value === 1).color, 255]);
+  const c1 = LAND_COVER_CLASSES.find((c) => c.value === 1);
+  expect([...out.slice(4, 8)]).toEqual([...c1.color, Math.round(255 * (c1.alpha ?? 1))]);
   expect(out[11]).toBe(0); // class 2 switched off
 });
 

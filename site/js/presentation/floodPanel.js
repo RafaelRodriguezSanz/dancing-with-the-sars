@@ -20,11 +20,11 @@ const line = (coords, props) => ({ type: 'Feature', properties: props, geometry:
 export class FloodPanel {
   /**
    * nisarWater() -> {url, bbox} of the class image of the selected date (water = 1 or 5), or null.
-   * dataDir() -> folder of the selected area; its flood_hand.png / flood_sites.json (scripts/flood_precompute.py)
-   * answer views too big for the detailed analysis.
+   * dataDirs(view) -> folders to try, the selected area first, then precomputed areas holding the view; the first
+   * with flood_hand.png / flood_sites.json (scripts/flood_precompute.py) answers views too big for the detailed analysis.
    */
-  constructor(doc, map, osm, fetchFn, { nisarWater, dataDir }) {
-    this.dataDir = dataDir;
+  constructor(doc, map, osm, fetchFn, { nisarWater, dataDirs }) {
+    this.dataDirs = dataDirs;
     this.map = map;
     this.osm = osm;
     this.fetch = fetchFn;
@@ -89,15 +89,17 @@ export class FloodPanel {
 
   /** Big view: flooded ground and refuges from the precomputed grid of the area; no roads, so no routes. */
   async runPrecomputed(view) {
-    const dir = this.dataDir();
     this.el.run.disabled = true;
     let ok = false;
     try {
       await this.busy('Reading the precomputed flood map...');
-      const [meta, sites] = await Promise.all([
-        this.fetch(`${dir}/flood_hand.json`).then((r) => (r.ok ? r.json() : null)),
-        this.fetch(`${dir}/flood_sites.json`).then((r) => (r.ok ? r.json() : { sites: [] })).catch(() => ({ sites: [] })),
-      ]);
+      let dir = null;
+      let meta = null;
+      for (const d of this.dataDirs(view)) { // an area analyzed before the flood step existed falls back to a ready one
+        meta = await this.fetch(`${d}/flood_hand.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        if (meta) { dir = d; break; }
+      }
+      const sites = dir ? await this.fetch(`${dir}/flood_sites.json`).then((r) => (r.ok ? r.json() : { sites: [] })).catch(() => ({ sites: [] })) : null;
       if (!meta) {
         this.say('No precomputed flood map for this area. Zoom in to a town or a stretch of river (about 30 km across or less), then press the button again.');
         return;
