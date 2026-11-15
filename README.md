@@ -78,7 +78,7 @@ Radar sees through clouds and at night, which matters most during the long rainy
 - **Alerts.** Click a candidate to see its date, size, the rule that fired and, for floods, the rain of the previous 7 days.
 - **Search bar (top).** Find a country, region or city by name, draw an area or use the current view, then **Analyze area** (needs the local server, see below). Progress bar and cancel included.
 - **How good is it?** Agreement of the map with independent references, where computed.
-- **El Niño flood response.** Press **El Niño floods** (next to Evolution) at any zoom: it opens the panel and analyzes the view. for the whole country the flood map and the public buildings are precomputed (`scripts/flood_precompute.py`) and show instantly. Zoom in to a riverside town (about 30 km across) and press **Analyze this view again** for the detailed analysis with streams and roads. Move the **River rise** slider (0-10 m) to see the flooded ground (blue), the safety margin (yellow) and the public buildings coloured by status: green stays dry, yellow is close to the water, red is flooded. Press **Plan evacuation from a point** and click where people need to leave from: the green line is the road route to the nearest dry refuge; a red dashed line shows the usual shortest way when it crosses flooded road. The panel also shows the 7-day rain forecast for the spot.
+- **El Niño flood response.** Press **El Niño floods** (next to Evolution) at any zoom: it opens the panel and analyzes the view. for the whole country the flood map and the public buildings are precomputed ([`scripts/flood_precompute.py`](scripts/flood_precompute.py)) and show instantly. Zoom in to a riverside town (about 30 km across) and press **Analyze this view again** for the detailed analysis with streams and roads. Move the **River rise** slider (0-10 m) to see the flooded ground (blue), the safety margin (yellow) and the public buildings coloured by status: green stays dry, yellow is close to the water, red is flooded. Press **Plan evacuation from a point** and click where people need to leave from: the green line is the road route to the nearest dry refuge; a red dashed line shows the usual shortest way when it crosses flooded road. The panel also shows the 7-day rain forecast for the spot.
 - **About.** Credits and this README.
 
 ### How the flood response works
@@ -95,20 +95,20 @@ It is a **planning aid, not an official evacuation plan**. It ignores levees, dr
 
 ## How the radar products are made
 
-1. **Find** NISAR GCOV granules over the box through NASA CMR (`scripts/nisar_access.py`).
-2. **Cut** the box out of each remote HDF5 granule with HTTP range reads: only the chunks covering the area are downloaded, not the ~2 GB file (`scripts/nisar_subset.py`). dB values are cached in `data/raw/` (gitignored).
+1. **Find** NISAR GCOV granules over the box through NASA CMR ([`scripts/nisar_access.py`](scripts/nisar_access.py)).
+2. **Cut** the box out of each remote HDF5 granule with HTTP range reads: only the chunks covering the area are downloaded, not the ~2 GB file ([`scripts/nisar_subset.py`](scripts/nisar_subset.py)). dB values are cached in `data/raw/` (gitignored).
 3. **Classify** each pixel with rules on gamma0 in dB: water, woody (high HV), double bounce (built-up or flooded vegetation), herbaceous (the rest). Permanent water and built-up come from per-pixel medians over the time series. Wind-roughened water (e.g. the Río de la Plata off Montevideo) can look like grassland to L-band, so places that JRC Global Surface Water sees as water at least 90% of the time are added to permanent water; validation uses the radar-only mask. For the whole country, a mosaic keeps the newest valid pixel of many passes.
-4. **Alert** on changes between dates (`scripts/nisar_alerts.py`). Each pass is first normalised by its own per-pixel median, so different viewing geometries can be mixed.
+4. **Alert** on changes between dates ([`scripts/nisar_alerts.py`](scripts/nisar_alerts.py)). Each pass is first normalised by its own per-pixel median, so different viewing geometries can be mixed.
    - *Flood*: HH < -17 dB and HV < -23 dB, at least 3 dB darker than usual, near permanent water.
    - *Vegetation loss*: HV > -14 dB before and a lasting drop of 4 dB or more.
    - *Crop growth*: HV < -18 dB before and a lasting rise of 4 dB or more.
-5. **Add context.** Flood candidates carry the 7-day rainfall before the date from Open-Meteo (ERA5) (`scripts/rainfall.py`): above 20 mm flooding is plausible, below 5 mm it is more likely dry, smooth soil.
-6. **Validate** against independent maps (`scripts/validate.py`).
-7. **Serve.** A static MapLibre GL site (plain ES modules, no build step) reads the products. `scripts/serve.py` adds a small localhost API that runs steps 1-6 for a drawn area.
+5. **Add context.** Flood candidates carry the 7-day rainfall before the date from Open-Meteo (ERA5) ([`scripts/rainfall.py`](scripts/rainfall.py)): above 20 mm flooding is plausible, below 5 mm it is more likely dry, smooth soil.
+6. **Validate** against independent maps ([`scripts/validate.py`](scripts/validate.py)).
+7. **Serve.** A static MapLibre GL site (plain ES modules, no build step) reads the products. [`scripts/serve.py`](scripts/serve.py) adds a small localhost API that runs steps 1-6 for a drawn area.
 
 ## Validation
 
-`scripts/validate.py` compares our map (most frequent class per pixel over 30 dates) with ESA WorldCover 2021 in four groups, and our permanent water with JRC Global Surface Water (water at least 50% of the time). Test box west of Montevideo (-56.75, -34.75 to -56.05, -34.15), 823,491 pixels at ~80 m:
+[`scripts/validate.py`](scripts/validate.py) compares our map (most frequent class per pixel over 30 dates) with ESA WorldCover 2021 in four groups, and our permanent water with JRC Global Surface Water (water at least 50% of the time). Test box west of Montevideo (-56.75, -34.75 to -56.05, -34.15), 823,491 pixels at ~80 m:
 
 | Group | Recall | Precision |
 |---|---|---|
@@ -143,8 +143,8 @@ WorldCover is from 2021 and has its own errors (about 75% overall accuracy); our
 Requires Python 3.12 and `make` (Node 18+ only for the tests).
 
 1. Create a free account at https://urs.earthdata.nasa.gov, open "Generate Token" and copy the token (valid 60 days).
-2. Copy `.env.example` to `.env` and set `EARTHDATA_TOKEN`. `.env` is gitignored: never commit it. Optional: `NISAR_CACHE_DAYS` (drawn areas unused for that many days are deleted, default 7) and `NISAR_WORKERS` (parallel downloads, default 4; lower it on machines with little RAM).
-3. Run `make`. It creates `.venv`, installs `requirements.txt`, checks `.env` and starts `scripts/serve.py`. Open http://127.0.0.1:8000/site/
+2. Copy [`.env.example`](.env.example) to `.env` and set `EARTHDATA_TOKEN`. `.env` is gitignored: never commit it. Optional: `NISAR_CACHE_DAYS` (drawn areas unused for that many days are deleted, default 7) and `NISAR_WORKERS` (parallel downloads, default 4; lower it on machines with little RAM).
+3. Run `make`. It creates `.venv`, installs [`requirements.txt`](requirements.txt), checks `.env` and starts [`scripts/serve.py`](scripts/serve.py). Open http://127.0.0.1:8000/site/
 4. Draw an area and press **Analyze area**. Products go to `site/data/nisar/<area>/`; drawn areas (`aoi_*`) are gitignored.
 
 ### Analyze another country
@@ -156,7 +156,7 @@ The public site has Uruguay precomputed. Any other country or region up to 10° 
 3. Press **Analyze area**. The local server cuts the NISAR passes over the box, builds a newest-pixel mosaic (boxes wider than 1.5° are processed like a country: ~2700 px across, alerts averaged 2x2), the change alerts and the precomputed flood map (terrain, JRC water and OpenStreetMap public buildings).
 4. A country takes from several minutes to an hour, depending on how many passes cover it and your connection. Results stay in `site/data/nisar/aoi_*` (gitignored) and reopen instantly.
 
-The token never leaves your computer: it is read from `.env` by `scripts/serve.py`. The public GitHub Pages site cannot do this step, because NASA's data servers do not accept authenticated requests from a web page.
+The token never leaves your computer: it is read from `.env` by [`scripts/serve.py`](scripts/serve.py). The public GitHub Pages site cannot do this step, because NASA's data servers do not accept authenticated requests from a web page.
 
 Other targets: `make install`, `make test` (unit tests with Jest), `make PORT=9000`.
 
@@ -168,7 +168,7 @@ Command line:
 .venv/Scripts/python scripts/validate.py --bbox w,s,e,n
 ```
 
-`scripts/nisar_tiles.py` builds the ~16 m tiles for chosen dates. On Linux/macOS use `.venv/bin/python`.
+[`scripts/nisar_tiles.py`](scripts/nisar_tiles.py) builds the ~16 m tiles for chosen dates. On Linux/macOS use `.venv/bin/python`.
 
 ## Architecture
 
@@ -190,11 +190,11 @@ The browser code follows a clean architecture: domain rules have no browser or n
 
 ## Code layout
 
-- `site/js/domain`: pure rules (scenes, areas, land cover, flood height, routing). No browser or network code.
-- `site/js/application`: use cases (scene lists, evolution series, validation summary).
-- `site/js/infrastructure`: NASA CMR, Overpass, terrain tiles, Open-Meteo, the local processing API.
-- `site/js/presentation`: map, panels and controls. `site/js/main.js` wires everything.
-- `scripts/`: Python pipeline and local server.
+- [`site/js/domain`](site/js/domain): pure rules (scenes, areas, land cover, flood height, routing). No browser or network code.
+- [`site/js/application`](site/js/application): use cases (scene lists, evolution series, validation summary).
+- [`site/js/infrastructure`](site/js/infrastructure): NASA CMR, Overpass, terrain tiles, Open-Meteo, the local processing API.
+- [`site/js/presentation`](site/js/presentation): map, panels and controls. [`site/js/main.js`](site/js/main.js) wires everything.
+- [`scripts/`](scripts): Python pipeline and local server.
 
 ## Tests
 
@@ -202,7 +202,7 @@ The browser code follows a clean architecture: domain rules have no browser or n
 make test        # or: npm install && npm test
 ```
 
-Unit tests cover every layer of the browser code: domain rules (areas, footprints, land cover, flood height, routing), use cases (evolution series, validation summary), infrastructure parsers and map layers. They live in `tests/`, one folder per layer, and run with [Jest](https://jestjs.io/) (Node 18+). The site itself still needs no build or install; Jest is only a development dependency.
+Unit tests cover every layer of the browser code: domain rules (areas, footprints, land cover, flood height, routing), use cases (evolution series, validation summary), infrastructure parsers and map layers. They live in [`tests/`](tests), one folder per layer, and run with [Jest](https://jestjs.io/) (Node 18+). The site itself still needs no build or install; Jest is only a development dependency.
 
 ## Known limitations
 
