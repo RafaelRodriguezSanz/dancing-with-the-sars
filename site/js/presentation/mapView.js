@@ -20,7 +20,6 @@ const STYLE = {
     bluemarble: { type: 'raster', tiles: [GIBS_BASE], tileSize: 256, maxzoom: 8, attribution: 'Blue Marble: NASA GIBS' },
     osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' },
     aoi: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
-    'aoi-mask': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
   },
   layers: [
     { id: 'space', type: 'background', paint: { 'background-color': '#04060c' } },
@@ -29,17 +28,12 @@ const STYLE = {
       id: 'osm', type: 'raster', source: 'osm', minzoom: 6,
       paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 8, 0.9], 'raster-brightness-min': 0.92, 'raster-brightness-max': 0.08, 'raster-hue-rotate': 180, 'raster-saturation': -0.5, 'raster-contrast': 0.1 },
     },
-    { id: 'aoi-mask', type: 'fill', source: 'aoi-mask', paint: { 'fill-color': '#04060c', 'fill-opacity': 0.78 } }, // hides products outside a part of a bigger area
     { id: 'aoi-line', type: 'line', source: 'aoi', paint: { 'line-color': '#ff9a3c', 'line-width': 2, 'line-dasharray': [3, 2] } },
   ],
 };
 
 const abs = (url) => (/^[a-z]+:/i.test(url) ? url : location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') + url);
 const box = ([w, s, e, n]) => ({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] } });
-/** Four strips around the box (no polygon hole, which does not draw reliably): dims what lies outside the area. */
-const outside = ([w, s, e, n]) => ({ type: 'FeatureCollection', features: [
-  box([-180, n, 180, 85]), box([-180, -85, 180, s]), box([-180, s, w, n]), box([e, s, 180, n]),
-] });
 
 export class MapView {
   constructor(elementId, aoi) {
@@ -63,12 +57,6 @@ export class MapView {
     this.map.addControl(new maplibregl.GlobeControl(), 'bottom-right');
     this.map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
     this.ready = new Promise((res) => this.map.once('load', res));
-    const addLayer = this.map.addLayer.bind(this.map); // the mask and the outline stay above every layer added later
-    this.map.addLayer = (spec, before) => {
-      addLayer(spec, before);
-      if (!before && spec.id !== 'aoi-mask' && spec.id !== 'aoi-line' && this.map.getLayer('aoi-mask')) { this.map.moveLayer('aoi-mask'); this.map.moveLayer('aoi-line'); }
-      return this.map;
-    };
     this.map.on('error', (ev) => this.onSourceError(ev));
     this.setArea(aoi);
   }
@@ -79,7 +67,6 @@ export class MapView {
     this.area = aoi;
     await this.ready;
     this.map.getSource('aoi').setData(box(aoi.bbox));
-    this.map.getSource('aoi-mask').setData(aoi.dataBbox ? outside(aoi.bbox) : { type: 'FeatureCollection', features: [] });
     const [w, s, e, n] = aoi.bbox;
     for (const slot of this.slots.values()) { slot.key = null; this.show(slot.layer, slot.date); }
     if (!this.introFlown) {
@@ -241,7 +228,7 @@ export class MapView {
       const lid = (slot?.group ?? slot?.pending)?.parts[0]?.lid;
       if (lid && this.map.getLayer(lid)) return lid;
     }
-    return 'aoi-mask'; // below the mask, so it dims products outside the area
+    return 'aoi-line';
   }
 
   removeGroup(group) {
