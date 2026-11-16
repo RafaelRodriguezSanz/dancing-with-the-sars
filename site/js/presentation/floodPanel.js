@@ -99,6 +99,8 @@ export class FloodPanel {
       this.el.rise.disabled = false;
       this.el.pick.disabled = false;
       this.el.all.disabled = false;
+      this.el.pick.title = '';
+      this.el.all.title = '';
       this.el.clear.hidden = false;
       ok = true;
     } catch (err) {
@@ -144,6 +146,8 @@ export class FloodPanel {
       this.el.rise.disabled = false;
       this.el.pick.disabled = true;
       this.el.all.disabled = true;
+      this.el.pick.title = NEEDS_SMALL;
+      this.el.all.title = NEEDS_SMALL;
       this.el.clear.hidden = false;
       ok = true;
     } catch (err) {
@@ -445,6 +449,7 @@ function cropGrid(meta, pixels, [w, s, e, n]) {
   return { hand, width: gw, height: gh, index, corners: [lonLat(0, 0), lonLat(gw, 0), lonLat(gw, gh), lonLat(0, gh)] };
 }
 
+const NEEDS_SMALL = 'Routes need roads, which are read only for a small selected area (about 30 km across or less): search a town or neighbourhood, draw a box, or zoom in and press Use this view.';
 const ROUTE_LAYERS = [
   { type: 'line', filter: ['==', ['get', 'role'], 'usual'], paint: { 'line-color': '#ff5a5a', 'line-width': 3, 'line-dasharray': [2, 2] } },
   { type: 'line', filter: ['==', ['get', 'role'], 'route'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3ddc84', 'line-width': 5 } },
