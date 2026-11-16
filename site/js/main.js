@@ -27,9 +27,9 @@ import { OsmEvacuationRepository } from './infrastructure/osmEvacuation.js';
 import { ReadmeViewer } from './presentation/readmeViewer.js';
 
 const fetchFn = (...args) => fetch(...args);
-let area = areaFromHash(location.hash) ?? SANTA_LUCIA;
+let area = areaFromHash(location.hash) ?? MONTEVIDEO; // the area the site opens on
 const map = new MapView('map', area);
-const boot = new BootScreen(document, map, area.bbox, `Scanning ${area === SANTA_LUCIA ? 'the Santa Lucía basin' : 'the area'} with NISAR`);
+const boot = new BootScreen(document, map, area.bbox, `Scanning ${area === MONTEVIDEO ? 'Montevideo' : 'the area'} with NISAR`);
 map.intro = boot.gone; // the first flight to the area waits for the intro to fade
 const state = new LayerState(LAYERS, LAYERS.filter((l) => !l.startsOff).map((l) => l.id));
 let currentDate = null;
@@ -92,7 +92,7 @@ const processPanel = new ProcessPanel(document, new ProcessingApi(fetchFn), {
 async function loadArea(aoi) {
   const mine = ++request; // ignore answers for an area the user already replaced
   area = aoi;
-  history.replaceState(null, '', aoi === SANTA_LUCIA ? location.pathname : areaToHash(aoi));
+  history.replaceState(null, '', aoi === MONTEVIDEO ? location.pathname : areaToHash(aoi));
   const [w, s, e, n] = aoi.bbox;
   areaInfo.textContent = `${aoi.name}: ${w}, ${s} to ${e}, ${n}`;
   map.setArea(aoi);
