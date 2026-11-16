@@ -180,7 +180,7 @@ document.getElementById('evolution').addEventListener('click', async () => {
     ? 'Time runs at real pace: one second is about 4 days. Steady colours: the viewing-angle difference between orbit passes is removed.'
     : 'Time runs at real pace: one second is about 4 days. Dates from three orbit passes alternate; their viewing angles cause part of the zig-zag.');
 });
-// El Niño flood response: flood scenario, dry refuges and evacuation routes for the current view.
+// El Niño flood response: flood scenario, dry refuges and evacuation routes for the selected area.
 const flood = new FloodPanel(document, map, new OsmEvacuationRepository(fetchFn), fetchFn, {
   nisarWater: () => (currentDate ? { url: `${DATA.dir}/${currentDate}_classes.png`, bbox: area.bbox } : null),
   dataDirs: (view) => [...new Set([DATA.dir, ...precomputedDirs(view)])],

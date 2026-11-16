@@ -1,5 +1,5 @@
 /**
- * "El Niño flood response" panel: for the current view, which ground a river rise would cover, which public
+ * "El Niño flood response" panel: for the selected area, which ground a river rise would cover, which public
  * buildings stay dry as refuges, which named places may be cut off by road, and a road route to the nearest
  * dry refuge that avoids flooded streets.
  * Everything runs in the browser from open sources: terrain (NASA SRTM), water seen by NISAR in the selected
@@ -60,16 +60,13 @@ export class FloodPanel {
     return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // let the browser paint it
   }
 
-  /** Box to analyze now, and whether it is small enough for the detailed analysis with roads. */
+  /** Box to analyze: always the selected area, wherever the map is looking. Roads, routes and cut-off places need a small one. */
   target() {
-    const big = ([w, s, e, n]) => e - w > MAX_SPAN || n - s > MAX_SPAN;
-    const selected = this.areaBox?.() ?? null;
-    const view = this.map.viewBox();
-    if (selected && !big(selected)) return { box: selected, detailed: true };
-    return big(view) ? { box: selected ?? view, detailed: false } : { box: view, detailed: true };
+    const [w, s, e, n] = this.areaBox?.() ?? this.map.viewBox();
+    return { box: [w, s, e, n], detailed: e - w <= MAX_SPAN && n - s <= MAX_SPAN };
   }
 
-  /** Slider released: the new level is already drawn; analyze again if the map or the area moved since the last
+  /** Slider released: the new level is already drawn; analyze again if the selected area changed since the last
    * analysis (by more than a fifth of the box, so a small nudge does not ask OpenStreetMap again). */
   released() {
     if (!this.scene || this.el.run.disabled || !this.analyzed) return;
@@ -80,8 +77,6 @@ export class FloodPanel {
   }
 
   async run() {
-    // The selected area is what gets analyzed, wherever the map is looking. Roads need a small box, so a small
-    // selected area is analyzed whole in detail; inside a big one, zooming in to a town analyzes that town.
     const { box: view, detailed } = this.target();
     this.analyzed = view;
     if (!detailed) { this.runPrecomputed(view); return; }
@@ -107,7 +102,7 @@ export class FloodPanel {
       ok = true;
     } catch (err) {
       this.busy(null);
-      this.say(`Could not read the data for this view (${err.message}). OpenStreetMap servers are often busy: try again in a minute.`);
+      this.say(`Could not read the data for this area (${err.message}). OpenStreetMap servers are often busy: try again in a minute.`);
     } finally {
       this.busy(null);
       this.el.run.disabled = false;
@@ -129,7 +124,7 @@ export class FloodPanel {
       }
       const sites = dir ? await this.fetch(`${dir}/flood_sites.json`).then((r) => (r.ok ? r.json() : { sites: [] })).catch(() => ({ sites: [] })) : null;
       if (!meta) {
-        this.say('No precomputed flood map for this area. Zoom in to a town or a stretch of river (about 30 km across or less), then press the button again.');
+        this.say('No precomputed flood map for this area. To analyze it from scratch, select a town (search it, draw a box or zoom in and press Use this view; about 30 km across or less), then press the button again.');
         return;
       }
       const pixels = await this.map.loadPixels(`${dir}/flood_hand.png`);
@@ -240,7 +235,7 @@ export class FloodPanel {
     this.say(`River ${rise.toFixed(1)} m above its usual level: about ${share}% of the analyzed area under water (blue). `
       + `${safe} of ${ranked.length} public buildings stay dry with ${SAFE_MARGIN_M} m to spare (green), ${wet} flooded (red). `
       + (sc.precomputed
-        ? 'Precomputed for the whole area (~130 m cells, rivers wider than ~30 m). Zoom in to a town (about 30 km across or less) and press the button again for streams, roads and evacuation routes.'
+        ? 'Precomputed for the whole area (~130 m cells, rivers wider than ~30 m). For streams, roads, places that may be cut off and evacuation routes, select a town (search it, draw a box or zoom in and press Use this view; about 30 km across or less) and press the button again.'
         : `Water seeds: OpenStreetMap rivers${sc.nisar ? ' + water seen by NISAR on the selected date' : ''}.`)
       + (sc.graph ? this.renderPlaces() : ''));
     if (this.origin && sc.graph) this.plan();
@@ -292,9 +287,9 @@ export class FloodPanel {
   placePopup(p) {
     const div = document.createElement('div');
     const status = {
-      'cut-off': 'May be cut off: in this scenario no dry road joins it to the largest dry road network of this view.',
+      'cut-off': 'May be cut off: in this scenario no dry road joins it to the largest dry road network of the area.',
       flooded: 'The road at this place is under water in this scenario.',
-      connected: 'Still joined by dry roads to the largest dry road network of this view.',
+      connected: 'Still joined by dry roads to the largest dry road network of the area.',
     }[p.status];
     div.innerHTML = '<div class="pop-head"><b></b></div><div class="pop-meta"></div><div></div><div class="pop-caveat">A candidate from a simple model: bridges and embankments are not in the terrain data. Check with SINAE / the departmental Cecoed.</div>';
     div.querySelector('b').textContent = p.name;
