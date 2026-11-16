@@ -27,7 +27,7 @@ Made by **Rafael Rodriguez Sanz**, Montevideo, Uruguay.
 
 **Demo video (30 s):** [watch the MP4](https://rafaelrodriguezsanz.github.io/dancing-with-the-sars/docs/demo.mp4)
 
-[![Demo video: the El Niño flood tool plans a route to a dry refuge](docs/demo.jpg)](https://rafaelrodriguezsanz.github.io/dancing-with-the-sars/docs/demo.mp4)
+[![Demo video: the El Niño flood tool plans routes to dry refuges](docs/demo.jpg)](https://rafaelrodriguezsanz.github.io/dancing-with-the-sars/docs/demo.mp4)
 
 ## At a glance
 
