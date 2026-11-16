@@ -54,15 +54,12 @@
     </div>
     <div class="row actions">
       <button id="evolution" class="primary" type="button" title="Play every processed date and chart what changes inside the current view">&#9654;&ensp;Evolution</button>
-      <button id="flood-open" class="flood-btn" type="button" aria-controls="flood" title="Which ground a river rise would cover in the current view, and dry public buildings to go to">&#127783;&ensp;El Ni&ntilde;o floods</button>
+      <button id="flood-open" class="flood-btn" type="button" aria-controls="flood" title="Which ground a river rise would cover in the selected area, and dry public buildings to go to">&#127783;&ensp;El Ni&ntilde;o floods</button>
     </div>
     <div id="scene-info" class="info">No scene selected</div>
     <div class="row display-row">
       <label for="opacity">Opacity</label>
       <input id="opacity" type="range" min="0" max="100" value="80">
-      <label class="check" title="NISAR looks at this area from three orbit passes with different angles; this removes the colour jump between them">
-        <input id="steady" type="checkbox" checked> Steady colours
-      </label>
     </div>
     <div id="status" class="status" role="status">Starting...</div>
     <details id="validation" class="tools" hidden>
@@ -92,9 +89,7 @@
   </aside>
     <section id="flood" class="glass flood-card" aria-label="El Niño flood response" hidden>
     <div class="card-head"><strong>El Niño flood response</strong><button id="flood-close" class="icon" type="button" aria-label="Close">&times;</button></div>
-    <p class="hint">El Niño years bring heavy rain and rivers such as the Uruguay, Negro, Yí, Cuareim and Olimar overflow. The whole country answers instantly; zoom in to a riverside town (about 30 km across) for streams, roads and a route to a dry refuge.</p>    <div class="row">
-      <button id="flood-run" class="primary" type="button">Analyze this view again</button>
-    </div>
+    <p class="hint">El Niño years bring heavy rain and rivers such as the Uruguay, Negro, Yí, Cuareim and Olimar overflow. It analyzes the selected area. The whole country answers instantly; select a riverside town (search it, draw a box or zoom in and press Use this view; about 30 km across) for streams, roads and a route to a dry refuge.</p>
     <div class="row">
       <label for="flood-rise">River rise</label>
       <input id="flood-rise" type="range" min="0" max="10" step="0.5" value="3" disabled>
@@ -102,7 +97,12 @@
     </div>
     <div class="row">
       <button id="flood-pick" type="button" disabled>Plan evacuation from a point</button>
+      <button id="flood-all" type="button" disabled>Plan all evacuation routes</button>
       <button id="flood-clear" type="button" hidden>Clear</button>
+    </div>
+    <div id="flood-need" class="callout" role="note" hidden>
+      <span class="callout-icon" aria-hidden="true">i</span>
+      <div><b>Routes need an area under 30 km across.</b> Search a town or neighbourhood, draw a box, or zoom in and press <b>Use this view</b>.</div>
     </div>
     <div id="flood-info" class="info" role="status"></div>
     <div id="flood-rain" class="info"></div>

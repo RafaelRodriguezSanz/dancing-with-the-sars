@@ -48,9 +48,10 @@ export const WET_PENALTY = 50;
 /** Dijkstra from `source`; `blocked([lon, lat])` marks flooded road (tested at the far end and the middle of each edge),
  * which costs WET_PENALTY times its length. dist holds those costs; use pathMetres for real lengths. */
 export function shortestPaths(graph, source, blocked = () => false) {
-  const dist = new Map([[source, 0]]);
+  const sources = Array.isArray(source) ? source : [source]; // several sources: distance to the nearest one
+  const dist = new Map(sources.map((s) => [s, 0]));
   const prev = new Map();
-  const heap = [[0, source]];
+  const heap = sources.map((s) => [0, s]);
   const push = (item) => {
     heap.push(item);
     for (let i = heap.length - 1; i > 0;) {
@@ -123,4 +124,74 @@ export function evacuationPlan(graph, origin, sites, blocked) {
   const route = pathTo(graph, dry, best.node);
   const usual = pathTo(graph, shortestPaths(graph, origin), best.node);
   return { site: best, route, length: pathMetres(route, blocked), usual, usualLength: pathMetres(usual, blocked) };
+}
+
+/**
+ * Groups of nodes joined by roads that stay dry. A stretch is dry when both ends and its middle are not blocked.
+ * Returns {comp: Map(node -> group id), size: Map(group id -> nodes)}; blocked nodes are in no group.
+ */
+export function dryComponents(graph, blocked = () => false) {
+  const wet = new Map();
+  const isWet = (id) => { if (!wet.has(id)) wet.set(id, Boolean(blocked(graph.pos.get(id)))); return wet.get(id); };
+  const comp = new Map();
+  const size = new Map();
+  for (const start of graph.adj.keys()) {
+    if (comp.has(start) || isWet(start)) continue;
+    comp.set(start, start);
+    let n = 0;
+    for (const stack = [start]; stack.length;) {
+      const u = stack.pop();
+      n += 1;
+      for (const e of graph.adj.get(u) ?? []) {
+        if (comp.has(e.to) || isWet(e.to) || blocked(e.mid)) continue;
+        comp.set(e.to, start);
+        stack.push(e.to);
+      }
+    }
+    size.set(start, n);
+  }
+  return { comp, size };
+}
+
+const largest = (size) => [...size].reduce((a, b) => (b[1] > a[1] ? b : a), [null, 0])[0];
+
+/**
+ * Which places a flood cuts off by road. places: [{..., node}] (node = nearest road node, or null).
+ * Compared with the same road network without the flood, each place gets a status:
+ *   'connected' - still joined by dry roads to the largest dry road network of the view;
+ *   'cut-off'   - its roads stay dry but no dry road leads to that network any more;
+ *   'flooded'   - the road at the place is under water;
+ *   'no-road'   - no road nearby, or not joined to the main network even without a flood: not judged.
+ * pocket = id of the dry group the place is in (null if flooded), to find what else is inside it.
+ */
+export function isolatedPlaces(graph, places, blocked) {
+  const base = dryComponents(graph);
+  const mainBase = largest(base.size);
+  const dry = dryComponents(graph, blocked);
+  const main = largest(dry.size);
+  return places.map((p) => {
+    const pocket = dry.comp.get(p.node) ?? null;
+    const status = p.node === null || p.node === undefined || base.comp.get(p.node) !== mainBase ? 'no-road'
+      : pocket === null ? 'flooded'
+        : pocket === main ? 'connected' : 'cut-off';
+    return { ...p, status, pocket: status === 'no-road' ? null : pocket };
+  });
+}
+
+/**
+ * Evacuation routes for many origins at once: one search outwards from every safe site gives each origin
+ * its cheapest site avoiding flooded roads. origins and sites: [{..., node}]. Returns, per origin,
+ * {origin, site, route, length: {total, wet}}, or {origin, site: null} when no road joins it to a site.
+ */
+export function evacuationRoutes(graph, origins, sites, blocked) {
+  const byNode = new Map();
+  for (const s of sites) if (!byNode.has(s.node)) byNode.set(s.node, s);
+  const back = shortestPaths(graph, [...byNode.keys()], blocked);
+  return origins.map((origin) => {
+    if (origin.node === null || origin.node === undefined || !back.dist.has(origin.node)) return { origin, site: null };
+    const route = [];
+    let last = origin.node;
+    for (let n = origin.node; n !== undefined; n = back.prev.get(n)) { route.push(graph.pos.get(n)); last = n; }
+    return { origin, site: byNode.get(last), route, length: pathMetres(route, blocked) };
+  });
 }
