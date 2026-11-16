@@ -52,7 +52,6 @@ map.onLayerStatus = (layer, date, ok) => {
 map.order = LAYERS.map((l) => l.id); // drawing order, bottom -> top
 map.classFilter = (id) => state.enabledClasses(id);
 map.onAlertDate = (d) => controls.select(d);
-document.getElementById('steady').addEventListener('change', (ev) => { VIEW.steady = ev.target.checked; }); // used by the evolution chart
 new LayerPanel(document.getElementById('side-panel'), LAYERS, state, {
   heading: LAYERS_HEADING,
   onLayer: (layer, on) => { state.toggle(layer.id, on); refresh(layer); },
@@ -110,6 +109,7 @@ async function loadArea(aoi) {
     const scenes = manifest?.scenes ?? {};
     controls.quality = (d) => (!scenes[d] || scenes[d].suspect ? 'none' : HIRES_DATES.has(d) ? 'best' : 'data');
     controls.setEntries(entries, manifest?.mosaic ? manifest.mosaic.key : pickDefaultDate(entries));
+    if (!floodCard.hidden) flood.run(); // the open flood card follows the selected area
     const usable = entries.filter((x) => x.usable).length;
     controls.setStatus(entries.length === 0
       ? 'No NISAR passes found for this area.'
@@ -177,7 +177,7 @@ document.getElementById('evolution').addEventListener('click', async () => {
   ];
   controls.setStatus(`Evolution of the view: ${dates.length} dates, 80 m products. Click a line to jump to a date.`);
   evolution.open(rows, series, VIEW.steady
-    ? 'Time runs at real pace: one second is about 4 days. Steady colours: the viewing-angle difference between orbit passes is removed.'
+    ? 'Time runs at real pace: one second is about 4 days. The viewing-angle difference between orbit passes is removed.'
     : 'Time runs at real pace: one second is about 4 days. Dates from three orbit passes alternate; their viewing angles cause part of the zig-zag.');
 });
 // El Niño flood response: flood scenario, dry refuges and evacuation routes for the selected area.

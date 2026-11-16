@@ -60,9 +60,6 @@
     <div class="row display-row">
       <label for="opacity">Opacity</label>
       <input id="opacity" type="range" min="0" max="100" value="80">
-      <label class="check" title="NISAR looks at this area from three orbit passes with different angles; this removes the colour jump between them">
-        <input id="steady" type="checkbox" checked> Steady colours
-      </label>
     </div>
     <div id="status" class="status" role="status">Starting...</div>
     <details id="validation" class="tools" hidden>
@@ -92,9 +89,7 @@
   </aside>
     <section id="flood" class="glass flood-card" aria-label="El Niño flood response" hidden>
     <div class="card-head"><strong>El Niño flood response</strong><button id="flood-close" class="icon" type="button" aria-label="Close">&times;</button></div>
-    <p class="hint">El Niño years bring heavy rain and rivers such as the Uruguay, Negro, Yí, Cuareim and Olimar overflow. It analyzes the selected area. The whole country answers instantly; select a riverside town (search it, draw a box or zoom in and press Use this view; about 30 km across) for streams, roads and a route to a dry refuge.</p>    <div class="row">
-      <button id="flood-run" class="primary" type="button">Analyze the selected area again</button>
-    </div>
+    <p class="hint">El Niño years bring heavy rain and rivers such as the Uruguay, Negro, Yí, Cuareim and Olimar overflow. It analyzes the selected area. The whole country answers instantly; select a riverside town (search it, draw a box or zoom in and press Use this view; about 30 km across) for streams, roads and a route to a dry refuge.</p>
     <div class="row">
       <label for="flood-rise">River rise</label>
       <input id="flood-rise" type="range" min="0" max="10" step="0.5" value="3" disabled>
@@ -102,6 +97,7 @@
     </div>
     <div class="row">
       <button id="flood-pick" type="button" disabled>Plan evacuation from a point</button>
+      <button id="flood-all" type="button" disabled title="Routes to the nearest dry refuge from every flooded public building and every place under water or cut off in the selected area">Plan all evacuation routes</button>
       <button id="flood-clear" type="button" hidden>Clear</button>
     </div>
     <div id="flood-info" class="info" role="status"></div>

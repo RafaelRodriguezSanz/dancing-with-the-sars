@@ -7,7 +7,7 @@
  * A planning aid built on simple assumptions, not an official evacuation plan.
  */
 import { heightAboveWater, isFlooded, rankSites, SAFE_MARGIN_M } from '../domain/floodRisk.js';
-import { buildGraph, evacuationPlan, isolatedPlaces, nearestNode } from '../domain/routing.js';
+import { buildGraph, evacuationPlan, evacuationRoutes, isolatedPlaces, nearestNode } from '../domain/routing.js';
 import { latToY, loadTerrain, lonToX, TERRAIN_ATTRIBUTION, xToLon, yToLat } from '../infrastructure/terrain.js';
 import { rainForecast } from '../infrastructure/rainForecast.js';
 
@@ -33,17 +33,18 @@ export class FloodPanel {
     this.fetch = fetchFn;
     this.nisarWater = nisarWater;
     this.el = {
-      run: doc.getElementById('flood-run'), rise: doc.getElementById('flood-rise'), riseOut: doc.getElementById('flood-rise-value'),
+      rise: doc.getElementById('flood-rise'), riseOut: doc.getElementById('flood-rise-value'),
       pick: doc.getElementById('flood-pick'), info: doc.getElementById('flood-info'), rain: doc.getElementById('flood-rain'),
-      clear: doc.getElementById('flood-clear'),
+      clear: doc.getElementById('flood-clear'), all: doc.getElementById('flood-all'),
     };
     this.scene = null;
     this.origin = null;
-    this.runLabel = this.el.run.textContent;
-    this.el.run.addEventListener('click', () => this.run());
+    this.all = false;
+    this.running = false;
     this.el.rise.addEventListener('input', () => this.render());
     this.el.rise.addEventListener('change', () => this.released());
     this.el.pick.addEventListener('click', () => this.pick());
+    this.el.all.addEventListener('click', () => { this.origin = null; this.all = true; this.planAll(); });
     this.el.clear.addEventListener('click', () => this.clear());
   }
 
@@ -54,7 +55,6 @@ export class FloodPanel {
   /** Spinner in the panel and on the map while the analysis runs; busy(null) ends it. */
   busy(text) {
     this.map.setBusy('flood', text);
-    this.el.run.textContent = text ? 'Analyzing...' : this.runLabel;
     if (!text) return;
     this.el.info.replaceChildren(Object.assign(document.createElement('i'), { className: 'spinner' }), ` ${text}`);
     return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // let the browser paint it
@@ -69,7 +69,7 @@ export class FloodPanel {
   /** Slider released: the new level is already drawn; analyze again if the selected area changed since the last
    * analysis (by more than a fifth of the box, so a small nudge does not ask OpenStreetMap again). */
   released() {
-    if (!this.scene || this.el.run.disabled || !this.analyzed) return;
+    if (!this.scene || this.running || !this.analyzed) return;
     const now = this.target().box;
     const was = this.analyzed;
     const slack = 0.2 * Math.max(was[2] - was[0], was[3] - was[1]);
@@ -81,7 +81,7 @@ export class FloodPanel {
     this.analyzed = view;
     if (!detailed) { this.runPrecomputed(view); return; }
     const [w, s, e, n] = view;
-    this.el.run.disabled = true;
+    this.running = true;
     let ok = false;
     try {
       await this.busy('Reading terrain (SRTM), rivers, roads and public buildings (OpenStreetMap)...');
@@ -98,21 +98,22 @@ export class FloodPanel {
       this.showRain(rain);
       this.el.rise.disabled = false;
       this.el.pick.disabled = false;
+      this.el.all.disabled = false;
       this.el.clear.hidden = false;
       ok = true;
     } catch (err) {
       this.busy(null);
-      this.say(`Could not read the data for this area (${err.message}). OpenStreetMap servers are often busy: try again in a minute.`);
+      this.say(`Could not read the data for this area (${err.message}). OpenStreetMap servers are often busy: close this card and press El Niño floods again in a minute.`);
     } finally {
       this.busy(null);
-      this.el.run.disabled = false;
+      this.running = false;
     }
     if (ok) this.render();
   }
 
   /** Big view: flooded ground and refuges from the precomputed grid of the area; no roads, so no routes. */
   async runPrecomputed(view) {
-    this.el.run.disabled = true;
+    this.running = true;
     let ok = false;
     try {
       await this.busy('Reading the precomputed flood map...');
@@ -124,7 +125,7 @@ export class FloodPanel {
       }
       const sites = dir ? await this.fetch(`${dir}/flood_sites.json`).then((r) => (r.ok ? r.json() : { sites: [] })).catch(() => ({ sites: [] })) : null;
       if (!meta) {
-        this.say('No precomputed flood map for this area. To analyze it from scratch, select a town (search it, draw a box or zoom in and press Use this view; about 30 km across or less), then press the button again.');
+        this.say('No precomputed flood map for this area. To analyze it from scratch, select a town (search it, draw a box or zoom in and press Use this view; about 30 km across or less).');
         return;
       }
       const pixels = await this.map.loadPixels(`${dir}/flood_hand.png`);
@@ -135,19 +136,21 @@ export class FloodPanel {
         .map((x) => ({ ...x, hand: x.hand ?? NaN }));
       const rain = await rainForecast(this.fetch, (w + e) / 2, (s + n) / 2).catch(() => null);
       this.origin = null;
+      this.all = false;
       this.map.setOverlay('flood-route', null);
       this.map.setOverlay('flood-places', null);
       this.scene = { terrain, hand: terrain.hand, sites: inView, graph: null, precomputed: true };
       this.showRain(rain);
       this.el.rise.disabled = false;
       this.el.pick.disabled = true;
+      this.el.all.disabled = true;
       this.el.clear.hidden = false;
       ok = true;
     } catch (err) {
       this.say(`Could not read the precomputed flood map (${err.message}).`);
     } finally {
       this.busy(null);
-      this.el.run.disabled = false;
+      this.running = false;
     }
     if (ok) this.render();
   }
@@ -235,10 +238,11 @@ export class FloodPanel {
     this.say(`River ${rise.toFixed(1)} m above its usual level: about ${share}% of the analyzed area under water (blue). `
       + `${safe} of ${ranked.length} public buildings stay dry with ${SAFE_MARGIN_M} m to spare (green), ${wet} flooded (red). `
       + (sc.precomputed
-        ? 'Precomputed for the whole area (~130 m cells, rivers wider than ~30 m). For streams, roads, places that may be cut off and evacuation routes, select a town (search it, draw a box or zoom in and press Use this view; about 30 km across or less) and press the button again.'
+        ? 'Precomputed for the whole area (~130 m cells, rivers wider than ~30 m). For streams, roads, places that may be cut off and evacuation routes, select a town (search it, draw a box or zoom in and press Use this view; about 30 km across or less).'
         : `Water seeds: OpenStreetMap rivers${sc.nisar ? ' + water seen by NISAR on the selected date' : ''}.`)
       + (sc.graph ? this.renderPlaces() : ''));
     if (this.origin && sc.graph) this.plan();
+    else if (this.all && sc.graph) this.planAll();
   }
 
   /**
@@ -311,6 +315,7 @@ export class FloodPanel {
 
   async pick() {
     this.say('Click on the map where people need to leave from.');
+    this.all = false;
     this.origin = await this.map.pickPoint();
     this.plan();
   }
@@ -347,12 +352,61 @@ export class FloodPanel {
       + wet);
   }
 
+  /** Routes to the nearest dry refuge from every affected point of the area: flooded public buildings and
+   * named places that are under water or may be cut off. */
+  planAll() {
+    const sc = this.scene;
+    if (!sc?.graph) return;
+    const rise = this.rise;
+    const { terrain, hand, graph } = sc;
+    const blocked = ([lon, lat]) => isFlooded(hand[terrain.index(lon, lat)], rise);
+    const roadFlooded = ([lon, lat]) => { const h = hand[terrain.index(lon, lat)]; return h > 0 && isFlooded(h, rise); };
+    const ranked = rankSites(sc.sites, rise);
+    const safe = ranked.filter((x) => x.status === 'safe').map((x) => ({ ...x, node: this.siteNode(x) })).filter((x) => x.node !== null);
+    const affected = [
+      ...ranked.filter((x) => x.status === 'flooded').map((x) => ({ ...x, node: this.siteNode(x) })),
+      ...isolatedPlaces(graph, sc.places, roadFlooded).filter((x) => x.status === 'flooded' || x.status === 'cut-off'),
+    ];
+    if (!affected.length) {
+      this.map.setOverlay('flood-route', null);
+      this.say('No public building or named place is affected in this scenario: raise the river to see evacuation routes.');
+      return;
+    }
+    const plans = evacuationRoutes(graph, affected, safe, blocked);
+    const features = [];
+    const load = new Map(); // refuge -> how many affected points go there
+    let dry = 0;
+    let wet = 0;
+    for (const { origin, site, route, length } of plans) {
+      const from = [origin.lon, origin.lat];
+      features.push(point(from, { role: 'origin' }));
+      if (!site) continue;
+      const crosses = length.wet > 0;
+      if (crosses) wet += 1; else dry += 1;
+      const dest = [site.lon, site.lat];
+      features.push(line(route, { role: crosses ? 'wet' : 'route-all' }), line([from, route[0]], { role: 'link' }), line([route[route.length - 1], dest], { role: 'link' }));
+      if (!load.has(site.name)) features.push(point(dest, { role: 'dest' }));
+      load.set(site.name, (load.get(site.name) ?? 0) + 1);
+    }
+    this.map.setOverlay('flood-route', { geojson: { type: 'FeatureCollection', features }, layers: ROUTE_LAYERS });
+    const none = plans.length - dry - wet;
+    const busiest = [...load].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name, k]) => `${name} (${k})`).join(', ');
+    this.say(`Evacuation routes from the ${plans.length} affected points of the area (flooded public buildings and places under water or cut off): `
+      + `${dry} reach a dry refuge by dry roads (green)`
+      + (wet ? `, ${wet} only by crossing flooded road (orange dashes): leave before the river peaks` : '')
+      + (none ? `, ${none} have no road to a dry refuge: move to higher ground and follow SINAE instructions` : '')
+      + '.' + (busiest ? ` Refuges receiving the most routes (ringed): ${busiest}.` : '')
+      + ' A planning aid, not an official plan: refuges are public buildings, not confirmed shelters.');
+  }
+
   clear() {
     this.scene = null;
     this.origin = null;
+    this.all = false;
     ['flood-extent', 'flood-sites', 'flood-route', 'flood-places'].forEach((id) => this.map.setOverlay(id, null));
     this.el.rise.disabled = true;
     this.el.pick.disabled = true;
+    this.el.all.disabled = true;
     this.el.clear.hidden = true;
     this.el.rain.textContent = '';
     this.say('');
@@ -394,6 +448,8 @@ function cropGrid(meta, pixels, [w, s, e, n]) {
 const ROUTE_LAYERS = [
   { type: 'line', filter: ['==', ['get', 'role'], 'usual'], paint: { 'line-color': '#ff5a5a', 'line-width': 3, 'line-dasharray': [2, 2] } },
   { type: 'line', filter: ['==', ['get', 'role'], 'route'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3ddc84', 'line-width': 5 } },
+  { type: 'line', filter: ['==', ['get', 'role'], 'wet'], paint: { 'line-color': '#ff9a3c', 'line-width': 3, 'line-dasharray': [2, 1.5] } },
+  { type: 'line', filter: ['==', ['get', 'role'], 'route-all'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3ddc84', 'line-width': 3 } },
   { type: 'line', filter: ['==', ['get', 'role'], 'link'], paint: { 'line-color': '#3ddc84', 'line-width': 3, 'line-dasharray': [1, 1.5] } },
   { type: 'circle', filter: ['==', ['get', 'role'], 'dest'], paint: { 'circle-radius': 11, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': '#3ddc84', 'circle-stroke-width': 3 } },
   { type: 'circle', filter: ['==', ['get', 'role'], 'origin'], paint: { 'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': '#ff9a3c', 'circle-stroke-width': 3 } },

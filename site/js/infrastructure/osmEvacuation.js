@@ -14,7 +14,7 @@ export function evacuationQuery([w, s, e, n]) {
   return `[out:json][timeout:60];
 way["highway"~"^(${ROADS})$"](${b});out geom qt;
 (nwr["amenity"~"^(${AMENITY})$"](${b});nwr["leisure"~"^(${LEISURE})$"](${b});node["emergency"="assembly_point"](${b}););out center tags qt;
-node["place"~"^(${PLACES})$"]["name"](${b});out tags qt;
+node["place"~"^(${PLACES})$"]["name"](${b});out qt;
 (way["waterway"~"^(river|stream|canal)$"](${b});way["natural"="water"](${b});relation["natural"="water"](${b});way["waterway"="riverbank"](${b}););out geom qt;`;
 }
 
@@ -36,7 +36,7 @@ export function parseEvacuation(json) {
     const t = el.tags ?? {};
     if (el.type === 'way' && t.highway && el.geometry) {
       roads.push({ id: el.id, highway: t.highway, nodes: el.nodes, coords: coords(el.geometry) });
-    } else if (el.type === 'node' && t.place && t.name) {
+    } else if (el.type === 'node' && t.place && t.name && Number.isFinite(el.lon)) {
       places.push({ name: t.name, type: t.place, lon: el.lon, lat: el.lat });
     } else if (t.amenity || t.leisure || t.emergency) {
       const p = el.type === 'node' ? el : el.center;

@@ -48,9 +48,10 @@ export const WET_PENALTY = 50;
 /** Dijkstra from `source`; `blocked([lon, lat])` marks flooded road (tested at the far end and the middle of each edge),
  * which costs WET_PENALTY times its length. dist holds those costs; use pathMetres for real lengths. */
 export function shortestPaths(graph, source, blocked = () => false) {
-  const dist = new Map([[source, 0]]);
+  const sources = Array.isArray(source) ? source : [source]; // several sources: distance to the nearest one
+  const dist = new Map(sources.map((s) => [s, 0]));
   const prev = new Map();
-  const heap = [[0, source]];
+  const heap = sources.map((s) => [0, s]);
   const push = (item) => {
     heap.push(item);
     for (let i = heap.length - 1; i > 0;) {
@@ -174,5 +175,23 @@ export function isolatedPlaces(graph, places, blocked) {
       : pocket === null ? 'flooded'
         : pocket === main ? 'connected' : 'cut-off';
     return { ...p, status, pocket: status === 'no-road' ? null : pocket };
+  });
+}
+
+/**
+ * Evacuation routes for many origins at once: one search outwards from every safe site gives each origin
+ * its cheapest site avoiding flooded roads. origins and sites: [{..., node}]. Returns, per origin,
+ * {origin, site, route, length: {total, wet}}, or {origin, site: null} when no road joins it to a site.
+ */
+export function evacuationRoutes(graph, origins, sites, blocked) {
+  const byNode = new Map();
+  for (const s of sites) if (!byNode.has(s.node)) byNode.set(s.node, s);
+  const back = shortestPaths(graph, [...byNode.keys()], blocked);
+  return origins.map((origin) => {
+    if (origin.node === null || origin.node === undefined || !back.dist.has(origin.node)) return { origin, site: null };
+    const route = [];
+    let last = origin.node;
+    for (let n = origin.node; n !== undefined; n = back.prev.get(n)) { route.push(graph.pos.get(n)); last = n; }
+    return { origin, site: byNode.get(last), route, length: pathMetres(route, blocked) };
   });
 }

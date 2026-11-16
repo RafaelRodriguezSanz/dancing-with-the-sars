@@ -1,6 +1,6 @@
 import { expect, test } from '@jest/globals';
 import { heightAboveWater, rankSites } from '../../site/js/domain/floodRisk.js';
-import { buildGraph, dryComponents, evacuationPlan, isolatedPlaces, nearestNode } from '../../site/js/domain/routing.js';
+import { buildGraph, dryComponents, evacuationPlan, evacuationRoutes, isolatedPlaces, nearestNode } from '../../site/js/domain/routing.js';
 
 test('heightAboveWater measures from the nearest water level', () => {
   // one row: water at 10 m on the left, ground rising to the right
@@ -44,4 +44,23 @@ test('isolatedPlaces tells connected, cut-off and flooded places apart', () => {
   expect(out.map((x) => x.status)).toEqual(['connected', 'cut-off', 'flooded', 'no-road', 'no-road']);
   expect(out[1].pocket).not.toBe(out[0].pocket);
   expect(isolatedPlaces(g, places, () => false).slice(0, 3).map((x) => x.status)).toEqual(['connected', 'connected', 'connected']);
+});
+
+test('evacuationRoutes gives every origin its nearest refuge avoiding flooded roads', () => {
+  // the square of the evacuationPlan test (flooded at B) plus a track 20-21 that no road joins to a refuge
+  const ways = [
+    { nodes: [1, 2, 3], coords: [[0, 0], [0.01, 0], [0.01, 0.01]] },
+    { nodes: [1, 4, 3], coords: [[0, 0], [0, 0.012], [0.01, 0.01]] },
+    { nodes: [20, 21], coords: [[0.2, 0.2], [0.21, 0.2]] },
+  ];
+  const g = buildGraph(ways);
+  const blocked = ([lon, lat]) => lon > 0.005 && lat < 0.003; // around B
+  const out = evacuationRoutes(g, [{ name: 'a', node: 1 }, { name: 'b', node: 2 }, { name: 'far', node: 20 }, { name: 'none', node: null }], [{ name: 'school', node: 3 }], blocked);
+  expect(out[0].site.name).toBe('school');
+  expect(out[0].route).toEqual([[0, 0], [0, 0.012], [0.01, 0.01]]);
+  expect(out[0].length.wet).toBe(0);
+  expect(out[1].site.name).toBe('school');
+  expect(out[1].route[0]).toEqual([0.01, 0]);
+  expect(out[2].site).toBeNull();
+  expect(out[3].site).toBeNull();
 });
