@@ -4,7 +4,7 @@
  */
 import { OsmTownRepository } from './osmTowns.js';
 
-const ROADS = 'motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|track|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link';
+const ROADS = 'motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|track|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link';
 const AMENITY = 'school|college|university|hospital|clinic|community_centre|social_facility|shelter|townhall|fire_station|police|place_of_worship';
 const LEISURE = 'sports_centre|stadium|sports_hall';
 const PLACES = 'city|town|village|hamlet|suburb|neighbourhood|quarter';

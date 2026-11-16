@@ -44,8 +44,8 @@ export function createAreaOfInterest(name, [west, south, east, north], dataBbox 
 export const SANTA_LUCIA = createAreaOfInterest('Santa Lucia lower basin', [-56.75, -34.75, -56.05, -34.15]);
 /** The capital, processed beforehand like Santa Lucía (80 m, 16 m tiles on a few dates). */
 export const MONTEVIDEO = createAreaOfInterest('Montevideo', [-56.45, -34.97, -56.0, -34.7]);
-/** The city inside the Montevideo products, under 30 km across: small enough for the flood analysis with roads and
+/** Central Montevideo, Ciudad Vieja to Malvín (~13 km): small enough for a quick flood analysis with roads and
  * routes. This is what the site opens on; its radar products are the ones of the whole MONTEVIDEO box. */
-export const MONTEVIDEO_CITY = createAreaOfInterest('Montevideo', [-56.33, -34.95, -56.04, -34.72], MONTEVIDEO.bbox);
+export const MONTEVIDEO_CITY = createAreaOfInterest('Montevideo', [-56.22, -34.94, -56.08, -34.84], MONTEVIDEO.bbox);
 /** Country view, processed beforehand at 200 m (scripts/nisar_subset.py --area uruguay). */
 export const URUGUAY = createAreaOfInterest('Uruguay', [-58.5, -35.0, -53.1, -30.1]);
