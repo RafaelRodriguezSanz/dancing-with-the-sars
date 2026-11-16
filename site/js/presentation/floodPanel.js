@@ -79,7 +79,9 @@ export class FloodPanel {
   async run() {
     const { box: view, detailed } = this.target();
     this.analyzed = view;
-    if (!detailed) { this.runPrecomputed(view); return; }
+    this.runs = (this.runs ?? 0) + 1; // a run started later (another area) wins: older answers are dropped
+    const mine = this.runs;
+    if (!detailed) { this.runPrecomputed(view, mine); return; }
     const [w, s, e, n] = view;
     this.running = true;
     let ok = false;
@@ -88,6 +90,7 @@ export class FloodPanel {
       const [terrain, osm, rain, nisar] = await Promise.all([
         loadTerrain(view), this.osm.evacuation(view), rainForecast(this.fetch, (w + e) / 2, (s + n) / 2), this.loadNisarWater(),
       ]);
+      if (mine !== this.runs) return;
       await this.busy('Computing which ground each river rise would cover...');
       const water = this.waterMask(terrain, osm.water, nisar);
       const hand = heightAboveWater(terrain.elev, water, terrain.width, terrain.height);
@@ -103,17 +106,17 @@ export class FloodPanel {
       this.el.clear.hidden = false;
       ok = true;
     } catch (err) {
+      if (mine !== this.runs) return;
       this.busy(null);
       this.say(`Could not read the data for this area (${err.message}). OpenStreetMap servers are often busy: close this card and press El Niño floods again in a minute.`);
     } finally {
-      this.busy(null);
-      this.running = false;
+      if (mine === this.runs) { this.busy(null); this.running = false; }
     }
-    if (ok) this.render();
+    if (ok && mine === this.runs) this.render();
   }
 
   /** Big view: flooded ground and refuges from the precomputed grid of the area; no roads, so no routes. */
-  async runPrecomputed(view) {
+  async runPrecomputed(view, mine) {
     this.running = true;
     let ok = false;
     try {
@@ -124,6 +127,7 @@ export class FloodPanel {
         meta = await this.fetch(`${d}/flood_hand.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
         if (meta) { dir = d; break; }
       }
+      if (mine !== this.runs) return;
       const sites = dir ? await this.fetch(`${dir}/flood_sites.json`).then((r) => (r.ok ? r.json() : { sites: [] })).catch(() => ({ sites: [] })) : null;
       if (!meta) {
         this.say('No precomputed flood map for this area. To analyze it from scratch, select a town (search it, draw a box or zoom in and press Use this view; about 30 km across or less).');
@@ -136,6 +140,7 @@ export class FloodPanel {
       const inView = sites.sites.filter((x) => x.lon >= w && x.lon <= e && x.lat >= s && x.lat <= n)
         .map((x) => ({ ...x, hand: x.hand ?? NaN }));
       const rain = await rainForecast(this.fetch, (w + e) / 2, (s + n) / 2).catch(() => null);
+      if (mine !== this.runs) return;
       this.origin = null;
       this.all = false;
       this.map.setOverlay('flood-route', null);
@@ -149,12 +154,11 @@ export class FloodPanel {
       this.el.clear.hidden = false;
       ok = true;
     } catch (err) {
-      this.say(`Could not read the precomputed flood map (${err.message}).`);
+      if (mine === this.runs) this.say(`Could not read the precomputed flood map (${err.message}).`);
     } finally {
-      this.busy(null);
-      this.running = false;
+      if (mine === this.runs) { this.busy(null); this.running = false; }
     }
-    if (ok) this.render();
+    if (ok && mine === this.runs) this.render();
   }
 
   showRain(rain) {

@@ -52,12 +52,19 @@ export function parseEvacuation(json) {
   return { roads, sites, places, water };
 }
 
+/** Saved answers for the area the site opens on, so it does not wait on the busy public servers. */
+export const SNAPSHOTS = { '-56.22,-34.94,-56.08,-34.84': 'data/osm/montevideo_centre.json' };
+
 export class OsmEvacuationRepository extends OsmTownRepository {
   /** Roads, refuges and water in bbox; rejects on network or server errors. */
   async evacuation(bbox) {
     const key = `evac:${bbox.join(',')}`;
     if (!this.cache.has(key)) {
-      const p = this.firstOk(`?data=${encodeURIComponent(evacuationQuery(bbox))}`).then(parseEvacuation);
+      const live = () => this.firstOk(`?data=${encodeURIComponent(evacuationQuery(bbox))}`).then(parseEvacuation);
+      const saved = SNAPSHOTS[bbox.join(',')];
+      const p = saved
+        ? this.fetch(saved).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(live)
+        : live();
       p.catch(() => this.cache.delete(key));
       this.cache.set(key, p);
     }
