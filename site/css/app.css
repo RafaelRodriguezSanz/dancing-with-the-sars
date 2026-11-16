@@ -345,3 +345,11 @@ button.ghost:hover { background: rgba(255, 255, 255, .08); border-color: transpa
 .splash-step { margin: 0; min-height: 1.2em; font-size: .78rem; color: #9fb3d1; }
 @media (prefers-reduced-motion: reduce) { .splash, .splash * { animation: none !important; transition: opacity .3s !important; } }
 @media (max-width: 640px) { .planet-wrap { width: 150px; height: 150px; } }
+
+/* Note in a card that explains why something is off. */
+.callout { display: flex; gap: 10px; align-items: flex-start; padding: 9px 11px; border-radius: 10px; font-size: .8rem; line-height: 1.4;
+  color: #dbeeff; background: linear-gradient(135deg, rgba(92, 200, 255, .16), rgba(123, 108, 255, .12)); border: 1px solid rgba(92, 200, 255, .45); }
+.callout[hidden] { display: none; }
+.callout b { color: #fff; }
+.callout-icon { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; background: var(--accent); color: #04121c;
+  font: 700 .75rem/18px Georgia, serif; font-style: italic; text-align: center; }

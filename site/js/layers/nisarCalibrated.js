@@ -30,7 +30,7 @@ export default defineLayer({
   id: 'nisar-calibrated',
   title: 'NISAR radar, calibrated',
   description: 'Real NISAR L-band backscatter cut from the NASA Earthdata granules: red = HH, green = HV (vegetation volume), blue = HH minus HV. Fixed dB scale, so dates are comparable.',
-  caveat: 'Ready for Santa Lucía; any other area must be analyzed first (Analyze area, local server with an Earthdata token). 80 m from afar, 16 m when zoomed in where available. Steady colours apply to the 80 m picture; the 16 m tiles show the raw pass.',
+  caveat: 'Ready for Santa Lucía; any other area must be analyzed first (Analyze area, local server with an Earthdata token). 80 m from afar, 16 m when zoomed in where available. The 80 m picture removes the colour jump between orbit passes; the 16 m tiles show the raw pass.',
   usesDate: true,
   region: { name: 'Uruguay', bbox: URUGUAY.bbox },
   legend: [

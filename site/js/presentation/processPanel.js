@@ -48,13 +48,13 @@ export class ProcessPanel {
     this.running = false;
     this.bar.hidden = true;
     this.onScan(null);
-    this.row.hidden = ready && !status;
-    this.btn.hidden = !status;
+    this.row.hidden = ready && !note;
+    this.btn.hidden = !status || ready; // an analyzed area needs no button
     this.btn.disabled = !status?.token;
     this.btn.classList.remove('stop');
     this.btn.removeAttribute('aria-label');
     this.btn.removeAttribute('title');
-    this.btn.textContent = ready ? 'Re-analyze area' : 'Analyze area';
+    this.btn.textContent = 'Analyze area';
     const hint = ready ? ''
       : !status
         ? 'Calibrated NISAR data is not processed for this area. To process any area, run scripts/serve.py on your computer with an Earthdata token (see .env.example).'
