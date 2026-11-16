@@ -40,6 +40,7 @@ export class FloodPanel {
     this.runLabel = this.el.run.textContent;
     this.el.run.addEventListener('click', () => this.run());
     this.el.rise.addEventListener('input', () => this.render());
+    this.el.rise.addEventListener('change', () => this.released());
     this.el.pick.addEventListener('click', () => this.pick());
     this.el.clear.addEventListener('click', () => this.clear());
   }
@@ -57,14 +58,31 @@ export class FloodPanel {
     return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // let the browser paint it
   }
 
+  /** Box to analyze now, and whether it is small enough for the detailed analysis with roads. */
+  target() {
+    const big = ([w, s, e, n]) => e - w > MAX_SPAN || n - s > MAX_SPAN;
+    const selected = this.areaBox?.() ?? null;
+    const view = this.map.viewBox();
+    if (selected && !big(selected)) return { box: selected, detailed: true };
+    return big(view) ? { box: selected ?? view, detailed: false } : { box: view, detailed: true };
+  }
+
+  /** Slider released: the new level is already drawn; analyze again if the map or the area moved since the last
+   * analysis (by more than a fifth of the box, so a small nudge does not ask OpenStreetMap again). */
+  released() {
+    if (!this.scene || this.el.run.disabled || !this.analyzed) return;
+    const now = this.target().box;
+    const was = this.analyzed;
+    const slack = 0.2 * Math.max(was[2] - was[0], was[3] - was[1]);
+    if (now.some((v, i) => Math.abs(v - was[i]) > slack)) this.run();
+  }
+
   async run() {
     // The selected area is what gets analyzed, wherever the map is looking. Roads need a small box, so a small
     // selected area is analyzed whole in detail; inside a big one, zooming in to a town analyzes that town.
-    const big = ([w0, s0, e0, n0]) => e0 - w0 > MAX_SPAN || n0 - s0 > MAX_SPAN;
-    const selected = this.areaBox?.() ?? null;
-    let view = this.map.viewBox();
-    if (selected && !big(selected)) view = selected;
-    else if (big(view)) { this.runPrecomputed(selected ?? view); return; }
+    const { box: view, detailed } = this.target();
+    this.analyzed = view;
+    if (!detailed) { this.runPrecomputed(view); return; }
     const [w, s, e, n] = view;
     this.el.run.disabled = true;
     let ok = false;
