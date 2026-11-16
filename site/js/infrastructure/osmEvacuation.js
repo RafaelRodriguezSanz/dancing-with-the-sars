@@ -1,5 +1,5 @@
 /**
- * Roads, possible refuges and water from OpenStreetMap for one view, fetched live from the Overpass API.
+ * Roads, possible refuges, named places and water from OpenStreetMap for one view, fetched live from the Overpass API.
  * Data © OpenStreetMap contributors, ODbL.
  */
 import { OsmTownRepository } from './osmTowns.js';
@@ -7,12 +7,14 @@ import { OsmTownRepository } from './osmTowns.js';
 const ROADS = 'motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|track|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link';
 const AMENITY = 'school|college|university|hospital|clinic|community_centre|social_facility|shelter|townhall|fire_station|police|place_of_worship';
 const LEISURE = 'sports_centre|stadium|sports_hall';
+const PLACES = 'city|town|village|hamlet|suburb|neighbourhood|quarter';
 
 export function evacuationQuery([w, s, e, n]) {
   const b = `${s},${w},${n},${e}`;
   return `[out:json][timeout:60];
 way["highway"~"^(${ROADS})$"](${b});out geom qt;
 (nwr["amenity"~"^(${AMENITY})$"](${b});nwr["leisure"~"^(${LEISURE})$"](${b});node["emergency"="assembly_point"](${b}););out center tags qt;
+node["place"~"^(${PLACES})$"]["name"](${b});out tags qt;
 (way["waterway"~"^(river|stream|canal)$"](${b});way["natural"="water"](${b});relation["natural"="water"](${b});way["waterway"="riverbank"](${b}););out geom qt;`;
 }
 
@@ -24,15 +26,18 @@ const LABEL = {
   stadium: 'Stadium', sports_hall: 'Sports hall', assembly_point: 'Assembly point',
 };
 
-/** Overpass JSON -> {roads: [{nodes, coords}], sites: [{name, type, lon, lat}], water: {lines, polygons}}. */
+/** Overpass JSON -> {roads: [{nodes, coords}], sites: [{name, type, lon, lat}], places: [{name, type, lon, lat}], water: {lines, polygons}}. */
 export function parseEvacuation(json) {
   const roads = [];
   const sites = [];
+  const places = [];
   const water = { lines: [], polygons: [] };
   for (const el of json.elements ?? []) {
     const t = el.tags ?? {};
     if (el.type === 'way' && t.highway && el.geometry) {
       roads.push({ id: el.id, highway: t.highway, nodes: el.nodes, coords: coords(el.geometry) });
+    } else if (el.type === 'node' && t.place && t.name) {
+      places.push({ name: t.name, type: t.place, lon: el.lon, lat: el.lat });
     } else if (t.amenity || t.leisure || t.emergency) {
       const p = el.type === 'node' ? el : el.center;
       if (!p) continue;
@@ -44,7 +49,7 @@ export function parseEvacuation(json) {
       for (const m of el.members ?? []) if (m.role === 'outer' && m.geometry) water.polygons.push(coords(m.geometry));
     }
   }
-  return { roads, sites, water };
+  return { roads, sites, places, water };
 }
 
 export class OsmEvacuationRepository extends OsmTownRepository {

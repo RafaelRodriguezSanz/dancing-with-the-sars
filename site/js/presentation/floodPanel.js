@@ -1,17 +1,19 @@
 /**
  * "El Niño flood response" panel: for the current view, which ground a river rise would cover, which public
- * buildings stay dry as refuges, and a road route to the nearest one that avoids flooded streets.
+ * buildings stay dry as refuges, which named places may be cut off by road, and a road route to the nearest
+ * dry refuge that avoids flooded streets.
  * Everything runs in the browser from open sources: terrain (NASA SRTM), water seen by NISAR in the selected
  * date, rivers, roads and buildings from OpenStreetMap, rain forecast from Open-Meteo.
  * A planning aid built on simple assumptions, not an official evacuation plan.
  */
 import { heightAboveWater, isFlooded, rankSites, SAFE_MARGIN_M } from '../domain/floodRisk.js';
-import { buildGraph, evacuationPlan, nearestNode } from '../domain/routing.js';
+import { buildGraph, evacuationPlan, isolatedPlaces, nearestNode } from '../domain/routing.js';
 import { latToY, loadTerrain, lonToX, TERRAIN_ATTRIBUTION, xToLon, yToLat } from '../infrastructure/terrain.js';
 import { rainForecast } from '../infrastructure/rainForecast.js';
 
 const MAX_SPAN = 0.3; // degrees: a city or a stretch of river; roads of a bigger view are too many for Overpass
 const MAX_GRID = 1600; // cells per side drawn from the precomputed grid (country view is downsampled to this)
+const PLACE_COLOR = { 'cut-off': '#ff4fd8', flooded: '#ff5a5a', connected: '#e8eefc' };
 const STATUS_COLOR = { safe: '#3ddc84', 'at-risk': '#ffc94d', flooded: '#ff5a5a', unknown: '#9aa4b2' };
 const km = (m) => (m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`);
 const point = (p, props) => ({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: p } });
@@ -71,7 +73,9 @@ export class FloodPanel {
       const water = this.waterMask(terrain, osm.water, nisar);
       const hand = heightAboveWater(terrain.elev, water, terrain.width, terrain.height);
       const sites = osm.sites.map((x) => ({ ...x, hand: hand[terrain.index(x.lon, x.lat)] }));
-      this.scene = { terrain, hand, sites, graph: buildGraph(osm.roads), nodes: new Map(), nisar: Boolean(nisar) };
+      const graph = buildGraph(osm.roads);
+      const places = (osm.places ?? []).map((x) => ({ ...x, node: nearestNode(graph, [x.lon, x.lat], 800) }));
+      this.scene = { terrain, hand, sites, places, graph, nodes: new Map(), nisar: Boolean(nisar) };
       this.showRain(rain);
       this.el.rise.disabled = false;
       this.el.pick.disabled = false;
@@ -113,6 +117,7 @@ export class FloodPanel {
       const rain = await rainForecast(this.fetch, (w + e) / 2, (s + n) / 2).catch(() => null);
       this.origin = null;
       this.map.setOverlay('flood-route', null);
+      this.map.setOverlay('flood-places', null);
       this.scene = { terrain, hand: terrain.hand, sites: inView, graph: null, precomputed: true };
       this.showRain(rain);
       this.el.rise.disabled = false;
@@ -212,8 +217,66 @@ export class FloodPanel {
       + `${safe} of ${ranked.length} public buildings stay dry with ${SAFE_MARGIN_M} m to spare (green), ${wet} flooded (red). `
       + (sc.precomputed
         ? 'Precomputed for the whole area (~130 m cells, rivers wider than ~30 m). Zoom in to a town (about 30 km across or less) and press the button again for streams, roads and evacuation routes.'
-        : `Water seeds: OpenStreetMap rivers${sc.nisar ? ' + water seen by NISAR on the selected date' : ''}.`));
+        : `Water seeds: OpenStreetMap rivers${sc.nisar ? ' + water seen by NISAR on the selected date' : ''}.`)
+      + (sc.graph ? this.renderPlaces() : ''));
     if (this.origin && sc.graph) this.plan();
+  }
+
+  /**
+   * Named places the scenario may cut off by road: draws them and returns the sentence for the panel.
+   * Road points over the usual water (bridges, culverts) are not tested, so nothing is cut at the usual level;
+   * a crossing closes when the ground next to it floods.
+   */
+  renderPlaces() {
+    const sc = this.scene;
+    const rise = this.rise;
+    const roadFlooded = ([lon, lat]) => { const h = sc.hand[sc.terrain.index(lon, lat)]; return h > 0 && isFlooded(h, rise); };
+    const places = isolatedPlaces(sc.graph, sc.places, roadFlooded).filter((x) => x.status !== 'no-road');
+    const cut = places.filter((x) => x.status === 'cut-off');
+    if (cut.length) { // dry public buildings inside each cut-off pocket
+      const safe = rankSites(sc.sites, rise).filter((x) => x.status === 'safe');
+      const pockets = isolatedPlaces(sc.graph, safe.map((x) => ({ node: this.siteNode(x) })), roadFlooded).map((x) => x.pocket);
+      cut.forEach((x) => { x.refuges = pockets.filter((k) => k === x.pocket).length; });
+    }
+    this.map.setOverlay('flood-places', {
+      geojson: { type: 'FeatureCollection', features: places.map((x) => point([x.lon, x.lat], { name: x.name, type: x.type, status: x.status, refuges: x.refuges ?? -1 })) },
+      layers: [{ type: 'circle', paint: {
+        'circle-radius': ['match', ['get', 'status'], 'connected', 4, 9],
+        'circle-color': 'rgba(0,0,0,0)',
+        'circle-stroke-color': ['match', ['get', 'status'], ...Object.entries(PLACE_COLOR).flat(), '#fff'],
+        'circle-stroke-width': ['match', ['get', 'status'], 'connected', 1.5, 3.5],
+      } }],
+      popup: (p) => this.placePopup(p),
+    });
+    if (!places.length) return '';
+    const names = (list) => { const n = list.map((x) => x.name); return n.length > 8 ? `${n.slice(0, 8).join(', ')} and ${n.length - 8} more` : n.join(', '); };
+    const under = places.filter((x) => x.status === 'flooded');
+    const noRefuge = cut.filter((x) => x.refuges === 0);
+    return ` Places that may be cut off by road (pink rings): ${cut.length ? names(cut) : 'none'}.`
+      + (noRefuge.length ? ` With no dry public building inside: ${names(noRefuge)}.` : '')
+      + (under.length ? ` With the road at the place under water (red rings): ${names(under)}.` : '')
+      + ' Candidates to check: bridges and embankments are not in the terrain model.';
+  }
+
+  siteNode(x) {
+    const sc = this.scene;
+    const key = `${x.lon},${x.lat}`;
+    if (!sc.nodes.has(key)) sc.nodes.set(key, nearestNode(sc.graph, [x.lon, x.lat], 300));
+    return sc.nodes.get(key);
+  }
+
+  placePopup(p) {
+    const div = document.createElement('div');
+    const status = {
+      'cut-off': 'May be cut off: in this scenario no dry road joins it to the largest dry road network of this view.',
+      flooded: 'The road at this place is under water in this scenario.',
+      connected: 'Still joined by dry roads to the largest dry road network of this view.',
+    }[p.status];
+    div.innerHTML = '<div class="pop-head"><b></b></div><div class="pop-meta"></div><div></div><div class="pop-caveat">A candidate from a simple model: bridges and embankments are not in the terrain data. Check with SINAE / the departmental Cecoed.</div>';
+    div.querySelector('b').textContent = p.name;
+    div.querySelector('.pop-meta').textContent = `OpenStreetMap place (${p.type})`;
+    div.children[2].textContent = status + (Number(p.refuges) >= 0 ? ` Dry public buildings it can still reach: ${p.refuges}.` : '');
+    return div;
   }
 
   sitePopup(p) {
@@ -240,11 +303,7 @@ export class FloodPanel {
     const blocked = ([lon, lat]) => isFlooded(hand[terrain.index(lon, lat)], rise);
     const origin = nearestNode(graph, this.origin, 1500);
     if (origin === null) { this.say('No road near that point. Pick a point closer to a street.'); return; }
-    const node = (x) => {
-      const key = `${x.lon},${x.lat}`;
-      if (!sc.nodes.has(key)) sc.nodes.set(key, nearestNode(graph, [x.lon, x.lat], 300));
-      return sc.nodes.get(key);
-    };
+    const node = (x) => this.siteNode(x);
     const safe = rankSites(sc.sites, rise).filter((x) => x.status === 'safe').map((x) => ({ ...x, node: node(x) })).filter((x) => x.node !== null);
     const plan = evacuationPlan(graph, origin, safe, blocked);
     const from = point(this.origin, { role: 'origin' });
@@ -266,7 +325,7 @@ export class FloodPanel {
   clear() {
     this.scene = null;
     this.origin = null;
-    ['flood-extent', 'flood-sites', 'flood-route'].forEach((id) => this.map.setOverlay(id, null));
+    ['flood-extent', 'flood-sites', 'flood-route', 'flood-places'].forEach((id) => this.map.setOverlay(id, null));
     this.el.rise.disabled = true;
     this.el.pick.disabled = true;
     this.el.clear.hidden = true;

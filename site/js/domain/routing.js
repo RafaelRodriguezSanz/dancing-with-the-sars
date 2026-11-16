@@ -124,3 +124,55 @@ export function evacuationPlan(graph, origin, sites, blocked) {
   const usual = pathTo(graph, shortestPaths(graph, origin), best.node);
   return { site: best, route, length: pathMetres(route, blocked), usual, usualLength: pathMetres(usual, blocked) };
 }
+
+/**
+ * Groups of nodes joined by roads that stay dry. A stretch is dry when both ends and its middle are not blocked.
+ * Returns {comp: Map(node -> group id), size: Map(group id -> nodes)}; blocked nodes are in no group.
+ */
+export function dryComponents(graph, blocked = () => false) {
+  const wet = new Map();
+  const isWet = (id) => { if (!wet.has(id)) wet.set(id, Boolean(blocked(graph.pos.get(id)))); return wet.get(id); };
+  const comp = new Map();
+  const size = new Map();
+  for (const start of graph.adj.keys()) {
+    if (comp.has(start) || isWet(start)) continue;
+    comp.set(start, start);
+    let n = 0;
+    for (const stack = [start]; stack.length;) {
+      const u = stack.pop();
+      n += 1;
+      for (const e of graph.adj.get(u) ?? []) {
+        if (comp.has(e.to) || isWet(e.to) || blocked(e.mid)) continue;
+        comp.set(e.to, start);
+        stack.push(e.to);
+      }
+    }
+    size.set(start, n);
+  }
+  return { comp, size };
+}
+
+const largest = (size) => [...size].reduce((a, b) => (b[1] > a[1] ? b : a), [null, 0])[0];
+
+/**
+ * Which places a flood cuts off by road. places: [{..., node}] (node = nearest road node, or null).
+ * Compared with the same road network without the flood, each place gets a status:
+ *   'connected' - still joined by dry roads to the largest dry road network of the view;
+ *   'cut-off'   - its roads stay dry but no dry road leads to that network any more;
+ *   'flooded'   - the road at the place is under water;
+ *   'no-road'   - no road nearby, or not joined to the main network even without a flood: not judged.
+ * pocket = id of the dry group the place is in (null if flooded), to find what else is inside it.
+ */
+export function isolatedPlaces(graph, places, blocked) {
+  const base = dryComponents(graph);
+  const mainBase = largest(base.size);
+  const dry = dryComponents(graph, blocked);
+  const main = largest(dry.size);
+  return places.map((p) => {
+    const pocket = dry.comp.get(p.node) ?? null;
+    const status = p.node === null || p.node === undefined || base.comp.get(p.node) !== mainBase ? 'no-road'
+      : pocket === null ? 'flooded'
+        : pocket === main ? 'connected' : 'cut-off';
+    return { ...p, status, pocket: status === 'no-road' ? null : pocket };
+  });
+}
