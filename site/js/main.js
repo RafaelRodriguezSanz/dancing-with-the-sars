@@ -184,6 +184,7 @@ document.getElementById('evolution').addEventListener('click', async () => {
 const flood = new FloodPanel(document, map, new OsmEvacuationRepository(fetchFn), fetchFn, {
   nisarWater: () => (currentDate ? { url: `${DATA.dir}/${currentDate}_classes.png`, bbox: area.bbox } : null),
   dataDirs: (view) => [...new Set([DATA.dir, ...precomputedDirs(view)])],
+  areaBox: () => area.bbox,
 });
 // The main "El Niño floods" button opens the card and analyzes the view in one click; closing clears the map.
 const floodCard = document.getElementById('flood');

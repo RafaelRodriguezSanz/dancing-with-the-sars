@@ -23,7 +23,8 @@ export class FloodPanel {
    * dataDirs(view) -> folders to try, the selected area first, then precomputed areas holding the view; the first
    * with flood_hand.png / flood_sites.json (scripts/flood_precompute.py) answers views too big for the detailed analysis.
    */
-  constructor(doc, map, osm, fetchFn, { nisarWater, dataDirs }) {
+  constructor(doc, map, osm, fetchFn, { nisarWater, dataDirs, areaBox }) {
+    this.areaBox = areaBox; // () -> [w, s, e, n] of the selected area
     this.dataDirs = dataDirs;
     this.map = map;
     this.osm = osm;
@@ -57,9 +58,14 @@ export class FloodPanel {
   }
 
   async run() {
-    const view = this.map.viewBox();
+    // The selected area is what gets analyzed, wherever the map is looking. Roads need a small box, so a small
+    // selected area is analyzed whole in detail; inside a big one, zooming in to a town analyzes that town.
+    const big = ([w0, s0, e0, n0]) => e0 - w0 > MAX_SPAN || n0 - s0 > MAX_SPAN;
+    const selected = this.areaBox?.() ?? null;
+    let view = this.map.viewBox();
+    if (selected && !big(selected)) view = selected;
+    else if (big(view)) { this.runPrecomputed(selected ?? view); return; }
     const [w, s, e, n] = view;
-    if (e - w > MAX_SPAN || n - s > MAX_SPAN) { this.runPrecomputed(view); return; }
     this.el.run.disabled = true;
     let ok = false;
     try {
@@ -106,7 +112,7 @@ export class FloodPanel {
       }
       const pixels = await this.map.loadPixels(`${dir}/flood_hand.png`);
       const terrain = cropGrid(meta, pixels, view);
-      if (!terrain) { this.say('This view is outside the precomputed flood map.'); return; }
+      if (!terrain) { this.say('This area is outside the precomputed flood map.'); return; }
       const [w, s, e, n] = view;
       const inView = sites.sites.filter((x) => x.lon >= w && x.lon <= e && x.lat >= s && x.lat <= n)
         .map((x) => ({ ...x, hand: x.hand ?? NaN }));
@@ -208,7 +214,7 @@ export class FloodPanel {
     const safe = ranked.filter((x) => x.status === 'safe').length;
     const wet = ranked.filter((x) => x.status === 'flooded').length;
     const share = Math.round((sc.hand.filter((h) => isFlooded(h, rise)).length / sc.hand.length) * 100);
-    this.say(`River ${rise.toFixed(1)} m above its usual level: about ${share}% of this view under water (blue). `
+    this.say(`River ${rise.toFixed(1)} m above its usual level: about ${share}% of the analyzed area under water (blue). `
       + `${safe} of ${ranked.length} public buildings stay dry with ${SAFE_MARGIN_M} m to spare (green), ${wet} flooded (red). `
       + (sc.precomputed
         ? 'Precomputed for the whole area (~130 m cells, rivers wider than ~30 m). Zoom in to a town (about 30 km across or less) and press the button again for streams, roads and evacuation routes.'
