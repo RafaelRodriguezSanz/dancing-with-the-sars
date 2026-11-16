@@ -27,6 +27,10 @@ test('LayerState toggles only known layers', () => {
   expect(() => s.toggle('nope')).toThrow(/unknown/);
 });
 
+test('only the optical comparison layer starts off', () => {
+  expect(LAYERS.filter((l) => l.startsOff).map((l) => l.id)).toEqual(['optical']);
+});
+
 test('every registered layer has unique id', () => {
   expect(new Set(LAYERS.map((l) => l.id)).size).toBe(LAYERS.length);
 });
