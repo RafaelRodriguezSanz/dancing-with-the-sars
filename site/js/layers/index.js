@@ -5,6 +5,7 @@ import landCover from './landCover.js';
 import alerts from './alerts.js';
 import builtUp from './builtUp.js';
 import wind from './wind.js';
+import optical from './optical.js';
 
-export const LAYERS = [landCover, builtUp, alerts, wind];
+export const LAYERS = [landCover, builtUp, alerts, wind, optical]; // optical is drawn on top and starts off: it is there to compare
 export const LAYERS_HEADING = 'NISAR radar';

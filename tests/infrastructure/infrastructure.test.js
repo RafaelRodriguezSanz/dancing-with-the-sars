@@ -1,5 +1,5 @@
 import { expect, test } from '@jest/globals';
-import { gibsTileUrl } from '../../site/js/infrastructure/gibs.js';
+import { gibsTileUrl, gibsOpticalTileUrl } from '../../site/js/infrastructure/gibs.js';
 import { cmrUrl, parseCmrResponse, CmrSceneRepository } from '../../site/js/infrastructure/cmrSceneRepository.js';
 import { FallbackSceneRepository } from '../../site/js/infrastructure/fallbackSceneRepository.js';
 import { SANTA_LUCIA } from '../../site/js/domain/scene.js';
@@ -11,6 +11,12 @@ const ok = (body) => ({ ok: true, status: 200, json: async () => body });
 
 test('gibsTileUrl builds the WMTS template for a date', () => {
   expect(gibsTileUrl('2026-06-19')).toBe('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/NISAR_L2_Geocoded_Polarimetric_Covariance/default/2026-06-19/GoogleMapsCompatible_Level13/{z}/{y}/{x}.png');
+});
+
+test('gibsOpticalTileUrl uses the date, or the newest image for a mosaic key', () => {
+  expect(gibsOpticalTileUrl('2026-10-17')).toBe('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2026-10-17/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg');
+  expect(gibsOpticalTileUrl('latest')).toContain('/default/default/');
+  expect(gibsOpticalTileUrl(null)).toContain('/default/default/');
 });
 
 test('cmrUrl includes collection and bbox', () => {

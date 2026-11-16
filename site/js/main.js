@@ -31,7 +31,7 @@ let area = areaFromHash(location.hash) ?? SANTA_LUCIA;
 const map = new MapView('map', area);
 const boot = new BootScreen(document, map, area.bbox, `Scanning ${area === SANTA_LUCIA ? 'the Santa Lucía basin' : 'the area'} with NISAR`);
 map.intro = boot.gone; // the first flight to the area waits for the intro to fade
-const state = new LayerState(LAYERS, LAYERS.map((l) => l.id));
+const state = new LayerState(LAYERS, LAYERS.filter((l) => !l.startsOff).map((l) => l.id));
 let currentDate = null;
 let gibsCovered = false;
 const refresh = (layer) => {

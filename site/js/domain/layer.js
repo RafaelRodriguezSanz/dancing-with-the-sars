@@ -4,6 +4,7 @@
  * spec: {
  *   id, title, description, caveat,
  *   usesDate: boolean,                 // true if the global date selector drives this layer
+ *   startsOff: boolean,                // true if the layer is unchecked when the page opens
  *   region: { name, bbox:[w,s,e,n] },  // where the layer demonstrates the signal
  *   legend: [{ color, label }],
  *   tiers: [Tier]                      // ordered cheapest -> best
