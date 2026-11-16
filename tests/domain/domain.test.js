@@ -1,5 +1,5 @@
 import { expect, test } from '@jest/globals';
-import { parseGranuleTitle, groupByDate, createAreaOfInterest, createScene, SANTA_LUCIA } from '../../site/js/domain/scene.js';
+import { parseGranuleTitle, groupByDate, createAreaOfInterest, createScene, MONTEVIDEO, MONTEVIDEO_CITY, SANTA_LUCIA } from '../../site/js/domain/scene.js';
 import { isCovered } from '../../site/js/domain/coverage.js';
 
 const TITLE = 'NISAR_L2_PR_GCOV_023_082_D_106_2005_DHDH_M_20260619T215212_20260619T215247_P05023_N_F_J_001';
@@ -40,4 +40,12 @@ test('isCovered honours range edges and gaps', () => {
   expect(isCovered('2026-04-13')).toBe(false);
   expect(isCovered('2026-11-11')).toBe(true);
   expect(isCovered('2026-11-12')).toBe(false);
+});
+
+test('the Montevideo city box is inside the Montevideo area and under 0.3 degrees a side', () => {
+  const [w, s, e, n] = MONTEVIDEO_CITY.bbox;
+  const [W, S, E, N] = MONTEVIDEO.bbox;
+  expect(w >= W && s >= S && e <= E && n <= N).toBe(true);
+  expect(e - w).toBeLessThan(0.3);
+  expect(n - s).toBeLessThan(0.3);
 });

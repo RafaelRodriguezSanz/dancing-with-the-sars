@@ -1,5 +1,5 @@
 /** Composition root: the only place that wires concrete classes. */
-import { MONTEVIDEO, SANTA_LUCIA, URUGUAY } from './domain/scene.js';
+import { MONTEVIDEO, MONTEVIDEO_CITY, SANTA_LUCIA, URUGUAY } from './domain/scene.js';
 import { listScenesForArea, withMosaic } from './application/listScenes.js';
 import { pickDefaultDate } from './application/selectDate.js';
 import { CmrSceneRepository } from './infrastructure/cmrSceneRepository.js';
@@ -184,7 +184,7 @@ document.getElementById('evolution').addEventListener('click', async () => {
 const flood = new FloodPanel(document, map, new OsmEvacuationRepository(fetchFn), fetchFn, {
   nisarWater: () => (currentDate ? { url: `${DATA.dir}/${currentDate}_classes.png`, bbox: area.bbox } : null),
   dataDirs: (view) => [...new Set([DATA.dir, ...precomputedDirs(view)])],
-  areaBox: () => area.bbox,
+  areaBox: () => (area === MONTEVIDEO ? MONTEVIDEO_CITY.bbox : area.bbox), // Montevideo: the city, so roads and routes are ready
 });
 // The main "El Niño floods" button opens the card and analyzes the view in one click; closing clears the map.
 const floodCard = document.getElementById('flood');
