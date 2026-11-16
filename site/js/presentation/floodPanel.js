@@ -210,9 +210,18 @@ export class FloodPanel {
     if (!sc) return;
     const rise = this.rise;
     this.el.riseOut.textContent = `${rise.toFixed(1)} m`;
-    const { width, height, corners } = sc.terrain;
+    const { width, height } = sc.terrain;
+    let { corners } = sc.terrain;
     const c = document.createElement('canvas');
     c.width = width; c.height = height;
+    // MapLibre draws a square image with a power-of-two side (1024 x 1024: central Montevideo) as a black box when
+    // it is shown smaller than its size, so such an image gets one more, empty row.
+    if (width === height && Number.isInteger(Math.log2(width))) {
+      c.height = height + 1;
+      const [nw, ne, se, sw] = corners;
+      const down = (top, bottom) => [bottom[0], bottom[1] + (bottom[1] - top[1]) / height];
+      corners = [nw, ne, down(ne, se), down(nw, sw)];
+    }
     const ctx = c.getContext('2d');
     const img = ctx.createImageData(width, height);
     for (let i = 0; i < sc.hand.length; i++) {
