@@ -63,7 +63,8 @@ export class MapView {
 
   /** New area of interest: outline it, fly to it, and reload active layers clipped to it. */
   async setArea(aoi) {
-    this.bbox = aoi.bbox;
+    this.bbox = aoi.dataBbox ?? aoi.bbox; // where the area's products sit
+    this.area = aoi;
     await this.ready;
     this.map.getSource('aoi').setData(box(aoi.bbox));
     const [w, s, e, n] = aoi.bbox;
@@ -72,7 +73,7 @@ export class MapView {
       // Start-up (the area is set twice: by the constructor and by main.js): every call waits for the intro to
       // fade (this.intro, a promise), then a single "Go to area" flight starts from START_KM out.
       await this.intro;
-      if (this.introFlown || this.bbox !== aoi.bbox) return; // already flown, or another area was picked meanwhile
+      if (this.introFlown || this.area !== aoi) return; // already flown, or another area was picked meanwhile
       this.introFlown = true;
       this.resetView({ duration: 4500 }); // same flight as "Go to area", from START_KM out, with a fixed length
       return;
@@ -84,7 +85,7 @@ export class MapView {
    * `essential` keeps it animated even with the system "reduce motion" setting (MapLibre would jump otherwise). */
   resetView(timing = { speed: 0.9, maxDuration: 4500 }) {
     // Note: a flight longer than maxDuration jumps instantly in MapLibre, so the intro passes a fixed duration.
-    const [w, s, e, n] = this.bbox;
+    const [w, s, e, n] = this.area.bbox;
     this.map.fitBounds([[w, s], [e, n]], { padding: this.freePadding(), curve: 1.5, ...timing, essential: true,
       easing: (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2) });
   }
