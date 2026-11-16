@@ -2,7 +2,7 @@
 
 # Dancing with the SARs
 
-**Land change you can watch, from NISAR L-band radar.** Built for the NASA Space Apps Challenge 2026.
+**When the river rises, radar finds the dry way out.** Land change you can watch, from NISAR L-band radar. Built for the NASA Space Apps Challenge 2026.
 
 [![Live demo](https://img.shields.io/badge/live_demo-GitHub_Pages-2ea44f?logo=github)](https://rafaelrodriguezsanz.github.io/dancing-with-the-sars/)
 [![Space Apps 2026](https://img.shields.io/badge/Space_Apps_2026-Dancing_with_the_SARs-0b3d91)](https://www.spaceappschallenge.org/2026/challenges/dancing-with-the-sars/)
