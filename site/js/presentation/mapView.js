@@ -36,9 +36,10 @@ const STYLE = {
 
 const abs = (url) => (/^[a-z]+:/i.test(url) ? url : location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') + url);
 const box = ([w, s, e, n]) => ({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] } });
-/** The world minus the box: darkens what lies outside the selected area. */
-const outside = ([w, s, e, n]) => ({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [
-  [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]], [[w, s], [w, n], [e, n], [e, s], [w, s]]] } });
+/** Four strips around the box (no polygon hole, which does not draw reliably): dims what lies outside the area. */
+const outside = ([w, s, e, n]) => ({ type: 'FeatureCollection', features: [
+  box([-180, n, 180, 85]), box([-180, -85, 180, s]), box([-180, s, w, n]), box([e, s, 180, n]),
+] });
 
 export class MapView {
   constructor(elementId, aoi) {
@@ -240,7 +241,7 @@ export class MapView {
       const lid = (slot?.group ?? slot?.pending)?.parts[0]?.lid;
       if (lid && this.map.getLayer(lid)) return lid;
     }
-    return 'aoi-line';
+    return 'aoi-mask'; // below the mask, so it dims products outside the area
   }
 
   removeGroup(group) {
