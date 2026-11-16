@@ -253,12 +253,18 @@ export class FloodPanel {
       this.say('No dry public building reachable by road from here in this scenario: move to higher ground and follow SINAE instructions.');
       return;
     }
-    const features = [from, line(plan.route, { role: 'route' })];
+    // The road route runs between road nodes: join it to the clicked point and to the refuge itself, and ring the refuge.
+    const dest = [plan.site.lon, plan.site.lat];
+    const features = [
+      from, line(plan.route, { role: 'route' }),
+      line([this.origin, plan.route[0]], { role: 'link' }), line([plan.route[plan.route.length - 1], dest], { role: 'link' }),
+      point(dest, { role: 'dest' }),
+    ];
     const cut = plan.usualLength.wet > 0 && plan.usual.length > 1;
     if (cut) features.push(line(plan.usual, { role: 'usual' }));
     this.map.setOverlay('flood-route', { geojson: { type: 'FeatureCollection', features }, layers: ROUTE_LAYERS });
     const wet = plan.length.wet > 0 ? ` Warning: ${km(plan.length.wet)} of it is already under water: leave before the river peaks.` : '';
-    this.say(`Nearest dry refuge: ${plan.site.name} (${plan.site.type}), ${km(plan.length.total)} by road (green).`
+    this.say(`Nearest dry refuge: ${plan.site.name} (${plan.site.type}), ${km(plan.length.total)} by road (green, ringed on the map).`
       + (cut ? ` The usual shortest way (${km(plan.usualLength.total)}, red dashes) crosses ${km(plan.usualLength.wet)} of flooded road; the green route avoids it.` : ' The usual way is dry.')
       + wet);
   }
@@ -310,5 +316,7 @@ function cropGrid(meta, pixels, [w, s, e, n]) {
 const ROUTE_LAYERS = [
   { type: 'line', filter: ['==', ['get', 'role'], 'usual'], paint: { 'line-color': '#ff5a5a', 'line-width': 3, 'line-dasharray': [2, 2] } },
   { type: 'line', filter: ['==', ['get', 'role'], 'route'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3ddc84', 'line-width': 5 } },
+  { type: 'line', filter: ['==', ['get', 'role'], 'link'], paint: { 'line-color': '#3ddc84', 'line-width': 3, 'line-dasharray': [1, 1.5] } },
+  { type: 'circle', filter: ['==', ['get', 'role'], 'dest'], paint: { 'circle-radius': 11, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': '#3ddc84', 'circle-stroke-width': 3 } },
   { type: 'circle', filter: ['==', ['get', 'role'], 'origin'], paint: { 'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': '#ff9a3c', 'circle-stroke-width': 3 } },
 ];
